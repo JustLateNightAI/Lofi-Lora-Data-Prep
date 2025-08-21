@@ -17,3 +17,7 @@ git clone https://github.com/JustLateNightAI/Lofi-Lora-Data-Prep.git
 cd Lofi-Lora-Data-Prep
 npm install
 npm run dev
+
+
+Main UI:  
+![Main UI](readme_imgs/1.png)
