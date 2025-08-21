@@ -1,0 +1,262 @@
+/* =======================================================
+   Lofi Data Prep — CYBERLINE (hard neon edges, no blur)
+   Aqua / Lime highlight + Magenta lowlight
+   ======================================================= */
+
+/* ---------- Palette ---------- */
+:root{
+  /* deep scene */
+  --bg-1: #06030a;   /* near-black */
+  --bg-2: #13051f;   /* wine-purple */
+  --bg-3: #2b0a41;   /* deep magenta-purple */
+
+  /* text */
+  --ink:   #fff6ff;  /* soft white with pink tint */
+  --muted: #caaed3;
+
+  /* hard “rim light” colors */
+  --edge-hi-teal: #00ffd5;  /* teal highlight streaks */
+  --edge-hi-lime: #7aff1f;  /* lime pop (iris ring) */
+  --edge-lo-mag:  #ff2ec2;  /* hot magenta lowlight */
+
+  /* surfaces (ui panels) */
+  --panel:   #1a0b33;
+  --panel-2: #210e3f;
+  --panel-3: #140726;
+
+  /* small accents */
+  --accent:   #00cfff; /* cyan for links */
+  --accent-2: #8b5bff; /* violet mid */
+
+  --overlay: rgba(0,0,0,.55);
+  --white:   #ffffff;
+}
+
+/* ---------- App background ---------- */
+*{ box-sizing:border-box; }
+html,body,#app{
+  height:100%; margin:0; color:var(--ink);
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+  background:
+    /* teal stroke at top/right */
+    radial-gradient(1200px 800px at 86% -8%, rgba(0,255,213,0.22) 0%, transparent 60%),
+    /* magenta wash bottom/left */
+    radial-gradient(900px 700px at 6% 112%, rgba(255,46,194,0.18) 0%, transparent 55%),
+    /* base vertical blend */
+    linear-gradient(180deg, var(--bg-1) 0%, var(--bg-2) 56%, var(--bg-3) 100%);
+}
+
+/* ---------- Layout ---------- */
+#app{ display:grid; grid-template-columns:320px 1fr; }
+
+/* =======================================================
+   HARD EDGE SYSTEM
+   ======================================================= */
+.edge{
+  position: relative;
+  border: 2px solid transparent;
+  border-radius: 12px;
+  background: var(--panel-2);
+}
+/* ---------- Hard-edge gradient (now 3‑stop: lime → teal → magenta) ---------- */
+.edge::before{
+  content:"";
+  position:absolute; inset:0;
+  padding:2px; border-radius:inherit; pointer-events:none;
+  background: linear-gradient(
+    135deg,
+    var(--edge-hi-lime) 0% 22%,
+    var(--edge-hi-teal) 22% 58%,
+    var(--edge-lo-mag)  68% 100%
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+}
+/* keep your .edge-45/.edge-225/.edge-315 but swap their backgrounds to the same 3-stop gradient */
+.edge-45::before,
+.edge-135::before,
+.edge-225::before,
+.edge-315::before{
+  background: linear-gradient(
+    var(--angle,135deg),
+    var(--edge-hi-lime) 0% 22%,
+    var(--edge-hi-teal) 22% 58%,
+    var(--edge-lo-mag)  68% 100%
+  );
+}
+/* helper to change angle without duplicating */
+.edge-45  { --angle: 45deg;  }
+.edge-135 { --angle: 135deg; }
+.edge-225 { --angle: 225deg; }
+.edge-315 { --angle: 315deg; }
+
+
+/* =======================================================
+   Sidebar
+   ======================================================= */
+aside#actions{
+  background: linear-gradient(180deg, var(--panel) 0%, #0f0c24 100%);
+  border-right:1px solid #2d2a62;
+  padding:12px; overflow:auto;
+}
+aside h1{
+  margin:0 0 12px; font-size:18px; letter-spacing:.5px; color:var(--ink);
+  padding:10px 12px; margin-left:-12px; margin-right:-12px;
+  background: var(--panel-2);
+  border-bottom:1px solid #2a2860;
+  position:relative;
+}
+aside h1.edge-wrap{ padding:0; border-radius:12px; }
+aside h1.edge-wrap > .bar{
+  margin:8px 12px; padding:10px 12px; background:var(--panel-2);
+  border-radius:10px;
+}
+aside h1.edge-wrap::before{
+  content:""; position:absolute; inset:0; padding:2px; border-radius:inherit;
+  background: linear-gradient(135deg, var(--edge-hi) 0 40%, var(--edge-lo) 60% 100%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude; pointer-events:none;
+}
+
+section{ margin-bottom:16px; }
+section h3{
+  margin:12px 0 6px; font-size:12px; color:var(--muted);
+  text-transform:uppercase; letter-spacing:.12em;
+  border-bottom:1px solid #2a2860; padding-bottom:6px;
+}
+.row{ display:flex; gap:8px; align-items:center; margin:6px 0; }
+.path{ font-size:12px; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+/* =======================================================
+   Inputs
+   ======================================================= */
+input,select,textarea{
+  background: linear-gradient(180deg, #161337, #12102c);
+  color:var(--ink); border:1px solid #2b2861; padding:8px 10px;
+  border-radius:10px; outline:none;
+}
+input::placeholder{ color:#8a8db3; }
+input:focus,select:focus,textarea:focus{
+  border-color:#2b2861;
+}
+input:focus.edge-thin::before,
+select:focus.edge-thin::before,
+textarea:focus.edge-thin::before{
+  background: linear-gradient(135deg, var(--edge-hi) 0 40%, var(--edge-lo) 60% 100%);
+}
+
+/* =======================================================
+   Buttons
+   ======================================================= */
+button{
+  background: var(--panel-2);
+  color:var(--ink);
+  border:0; border-radius:10px;
+  padding:9px 16px; font-weight:800; letter-spacing:.25px;
+  cursor:pointer; transition: transform .08s ease, filter .15s ease, background .15s ease;
+}
+button:hover{ filter:brightness(1.08); transform: translateY(-1px); }
+button:active{ transform: translateY(0); filter:brightness(.98); }
+button:disabled{ opacity:.55; cursor:not-allowed; }
+
+button.edge { border-radius:10px; }
+button.primary{ background:#201d49; color:#e9e9ff; }
+button.secondary{ background:#162236; color:#d9f6ff; }
+button.danger{ background:#2a1120; color:#ffd9e8; }
+
+/* =======================================================
+   Viewer / Grids
+   ======================================================= */
+#viewer{ position:relative; padding:12px; overflow:auto; }
+.grid{ margin-bottom:18px; }
+.grid.hidden{ display:none; }
+.grid-title{ font-weight:800; margin-bottom:10px; color:var(--ink); }
+
+.grid-wrap{ display:grid; gap:10px; }
+.grid.small  .grid-wrap{ grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); }
+.grid.medium .grid-wrap{ grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+.grid.large  .grid-wrap{ grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+
+.tile{
+  position:relative; border-radius:14px; overflow:hidden;
+  background: linear-gradient(180deg, #17153a, #12102b);
+  border:1px solid #2a2860;
+  display:grid; place-items:center;
+}
+.tile.edge{ border-radius:14px; background: var(--panel-3); }
+
+.grid.small  .tile{ height:100px; }
+.grid.medium .tile{ height:150px; }
+.grid.large  .tile{ height:250px; }
+
+.tile>img{
+  width:auto; height:auto; max-width:100%; max-height:100%;
+  object-fit:contain; object-position:center; display:block;
+}
+.tile .name{
+  position:absolute; left:0; right:0; bottom:0;
+  font-size:12px; padding:3px 6px; color:var(--ink);
+  background: linear-gradient(180deg, rgba(15,12,29,.12), rgba(15,12,29,.6));
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.tile.selected.edge::before{ padding:3px; }
+
+/* =======================================================
+   Modal
+   ======================================================= */
+.modal{ position:fixed; inset:0; display:grid; place-items:center; background:var(--overlay); }
+.modal.hidden{ display:none; }
+
+.modal-card{
+  width:min(1000px,92vw); height:min(86vh,720px);
+  border-radius:16px; overflow:hidden;
+  background: linear-gradient(180deg, #15133a 0%, #10102a 100%);
+  border:1px solid #2c2a62;
+  display:grid; grid-template-columns:2fr 1fr;
+}
+.modal-card.edge{ border-radius:16px; }
+
+.modal-img{ position:relative; background:#0c0a1a; }
+.modal-img>img{
+  position:absolute; inset:0; margin:auto;
+  width:auto; height:auto; max-width:100%; max-height:100%;
+  object-fit:contain;
+}
+
+.modal-meta{
+  background: linear-gradient(180deg, #19173c, #141231);
+  border-left:1px solid #2b2962; padding:12px;
+  display:grid; grid-template-rows:auto 1fr auto; gap:10px;
+}
+#modal-tags{
+  width:100%; height:100%; min-height:160px; resize:none;
+  border:1px solid #36338a; border-radius:10px;
+  background: linear-gradient(180deg, #131133, #0f0d26);
+  color:var(--ink); padding:10px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size:13px;
+}
+
+/* =======================================================
+   Utilities
+   ======================================================= */
+a{ color:var(--accent); text-decoration:none; }
+a:hover{ color:#bff3ff; }
+
+hr{ border:none; height:1px; background: linear-gradient(90deg, transparent, #2a2860, transparent); }
+
+::-webkit-scrollbar{ width:10px; height:10px; }
+::-webkit-scrollbar-thumb{
+  background: linear-gradient(180deg, var(--edge-hi), var(--edge-lo));
+  border-radius:20px; border:3px solid #14122c;
+}
+::-webkit-scrollbar-track{ background:#14122c; }
+
+/* =======================================================
+   Suggested bindings:
+   - Add .edge.edge-135 to: buttons, tiles, .modal-card, sidebar title bar
+   - For inputs, add .edge-thin (edges show on focus)
+   ======================================================= */
