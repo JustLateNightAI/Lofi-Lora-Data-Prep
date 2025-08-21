@@ -11,13 +11,15 @@ A cross-platform Electron app for curating LoRA training datasets.
 - Search tags & selection mode
 - Undo operations
 
+
+## Screenshots
+
+![Main UI](readme_imgs/1.png)
+
+
 ## Installation
 ```bash
 git clone https://github.com/JustLateNightAI/Lofi-Lora-Data-Prep.git
 cd Lofi-Lora-Data-Prep
 npm install
 npm run dev
-
-
-Main UI:  
-![Main UI](readme_imgs/1.png)
