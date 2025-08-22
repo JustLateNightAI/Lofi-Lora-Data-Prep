@@ -1,4 +1,4 @@
-# Lofi Lora Data Prep
+# Lofi's Lora Data Prep
 
 A cross-platform Electron app for curating LoRA training datasets.
 Built for Linux and Windows, God help you if your on Mac (in theory it should work on mac, but im not supporting mac)
