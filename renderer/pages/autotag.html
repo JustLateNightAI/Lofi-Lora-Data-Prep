@@ -1,0 +1,174 @@
+<!-- ===== AUTO TAGGING: Sidebar ===== -->
+<aside id="actions">
+  <h1 class="edge edge-135"><span class="bar">Lofi Data Prep</span></h1>
+
+  <section>
+    <h3>GPU Status</h3>
+    <div id="vram-box" class="progress-box">
+      <div class="row" style="font-size:12px;">
+        <span id="vram-name">GPU: (detecting…)</span>
+        <span id="vram-nums" style="margin-left:auto">— / —</span>
+      </div>
+      <div class="progress"><div class="bar" id="vram-bar" style="width:0%"></div></div>
+      <div class="progress-status" id="vram-status">Waiting for sidecar…</div>
+    </div>
+  </section>
+
+  <section>
+    <h3>Engine</h3>
+    <div class="row">
+      <label><input type="radio" name="jc-device" value="gpu" checked> GPU (recommended)</label>
+      <label><input type="radio" name="jc-device" value="cpu"> CPU (very slow)</label>
+    </div>
+  </section>
+
+  <section>
+    <h3>Device</h3>
+    <div class="row">
+      <label class="sr-only" for="jc-gpu-device">GPU</label>
+      <select id="jc-gpu-device" class="edge-thin">
+        <!-- populated from /gpu, e.g. cuda:0 / cuda:1 -->
+      </select>
+    </div>
+  </section>
+
+  <section>
+    <h3>Settings</h3>
+    <div class="row">
+      <label>Quant</label>
+        <select id="jc-quant" class="edge-thin">
+          <option value="int8">Balanced (INT8)</option>
+          <option value="nf4">Low Memory (NF4)</option>
+          <option value="bf16" selected>Full Quality (BF16)</option>
+        </select>
+    </div>
+    <div class="row">
+      <label>Image side</label>
+      <select id="jc-image-side" class="edge-thin">
+        <option value="384">384</option>
+        <option value="448" selected>448</option>
+        <!-- add 512/768/1024 later if you like -->
+      </select>
+    </div>
+  </section>
+
+  <section>
+    <h3>Input Folder</h3>
+    <div class="row" style="flex-direction:column; gap:6px;">
+      <div id="autotag-input-path" class="mono" style="font-size:12px; word-break:break-all;">(from Home)</div>
+      <div><button id="autotag-change-input" class="edge edge-135">Change…</button></div>
+            <button id="toggle-select" class="edge edge-135">Selection Mode: Off</button>
+    </div>
+  </section>
+
+  <section>
+    <h3>Model</h3>
+    <div class="row" style="gap:8px;">
+      <button id="jc-install" class="edge edge-135">Load Model</button>
+      <button id="jc-unload" class="edge edge-135" disabled>Unload</button>
+    </div>
+
+    <!-- optional first-run / download progress (kept but hidden) -->
+    <div id="jc-progress" class="progress-box hidden">
+      <div class="progress"><div class="bar" style="width:0%"></div></div>
+      <div class="progress-status" id="jc-progress-status">Idle…</div>
+    </div>
+  </section>
+
+  <section>
+    <h3>Auto Tagging</h3>
+    <div class="row">
+      <button id="jc-generate" class="edge edge-135" disabled>Generate</button>
+    </div>
+  </section>
+</aside>
+
+<!-- ===== AUTO TAGGING: Main (Prompt + Grid with draggable divider) ===== -->
+<main id="viewer">
+  <!-- Upper: Tagging settings / prompt -->
+  <div class="row" style="align-items:flex-start; gap:20px;">
+    <div class="col" style="display:flex; flex-direction:column;">
+      <label for="jc-prompt-style" style="margin-bottom:4px;">Captioning Style</label>
+      <select id="jc-prompt-style" class="edge-thin" style="min-width:160px;"></select>
+      <button id="jc-save-template" type="button" class="edge edge-135 btn-secondary" style="margin-top:6px; padding:2px 6px; font-size:12px;">Save</button>
+    </div>
+
+    <div class="col" style="display:flex; flex-direction:column;">
+      <label for="jc-caption-length" style="margin-bottom:4px;">Caption length</label>
+      <select id="jc-caption-length" class="edge-thin" style="min-width:140px;">
+        <option value="short" selected>Short</option>
+        <option value="medium">Medium</option>
+        <option value="long">Long</option>
+        <option value="any">Any</option>
+      </select>
+
+      <!-- Max tokens enable + slider under caption length -->
+      <label style="margin-top:8px; font-size:12px; display:flex; align-items:center; gap:4px;">
+        <input type="checkbox" id="jc-max-tokens-enable"> Custom tokens
+      </label>
+      <input id="jc-max-tokens" class="edge-thin" type="range"
+             min="64" max="4096" step="16" value="512"
+             disabled
+             style="width:160px;">
+      <span id="jc-max-tokens-live" class="mono" style="font-size:12px; opacity:0.8;">512</span>
+    </div>
+        <!-- Compact Temperature -->
+        <div class="col compact-control">
+          <label class="compact-label">
+            <input id="jc-temperature-enable" type="checkbox" checked>
+            <span>Enable Temperature</span>
+          </label>
+
+          <div class="compact-slider">
+            <label for="jc-temperature">Temperature: <span id="jc-temperature-live">0.60</span></label>
+            <input id="jc-temperature" class="range small" type="range" min="0" max="2" step="0.05" value="0.60">
+          </div>
+        </div>
+
+        <!-- Compact Top-p -->
+        <div class="col compact-control">
+          <label class="compact-label">
+            <input id="jc-top-p-enable" type="checkbox" checked>
+            <span>Enable Top-p</span>
+          </label>
+
+          <div class="compact-slider">
+            <label for="jc-top-p">Top-p: <span id="jc-top-p-live">0.90</span></label>
+            <input id="jc-top-p" class="range small" type="range" min="0" max="1" step="0.01" value="0.90">
+          </div>
+        </div>
+  </div>
+
+  <!-- Hidden initially -->
+  <input id="jc-template-name" class="edge-thin" placeholder="Template name…" style="display:none; min-width:200px;" />
+  <button id="jc-template-confirm" type="button" class="edge edge-135 btn-secondary" style="display:none;">Save</button>
+
+  <div id="autotag-top" class="panel">
+    <h3>Tagging Prompt</h3>
+    <div class="row" style="flex-direction:column; gap:8px;">
+      <textarea id="jc-prompt" class="edge-thin" rows="6" placeholder="Describe desired tags or guidance (optional)…"></textarea>
+    </div>
+  </div>
+
+  <!-- Drag handle (no inline JS; renderer.js wires it) -->
+  <div id="autotag-split" class="split-handle" role="separator" aria-orientation="horizontal" tabindex="0">
+    <!-- style with a grip/dots in CSS -->
+  </div>
+
+<!-- Captioning progress (separate from model load) -->
+<div id="jc-cap-progress" class="progress-box hidden" style="margin-top:8px;">
+  <div class="row" style="font-size:12px;">
+    <span id="jc-cap-status">Idle…</span>
+    <span id="jc-cap-count" style="margin-left:auto">0/0</span>
+  </div>
+  <div class="progress"><div class="bar" id="jc-cap-bar" style="width:0%"></div></div>
+</div>
+
+  <!-- Lower: Folder viewer grid -->
+  <div id="autotag-bottom" class="grid medium">
+    <div class="grid-title">Folder Viewer</div>
+    <div class="grid-wrap" id="autotag-wrap">
+      <!-- tiles render here; no floating info card -->
+    </div>
+  </div>
+</main>

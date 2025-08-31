@@ -1,0 +1,422 @@
+/* =========================
+   Lofi Data Prep — Cream/Teal UI
+   Professional, warm, readable
+   ========================= */
+
+/* ---------- Palette (CSS Vars) ---------- */
+:root {
+  --bg:           #fdf7ed; /* main background (cream) */
+  --panel:        #f6efe3; /* sidebar / meta panels */
+  --panel-edge:   #d6cfc2;
+  --panel-edge-2: #cbbfae;
+
+  --text:         #2b2b2b; /* primary text (charcoal) */
+  --muted:        #6e5b48; /* muted text for paths/labels */
+  --heading:      #5a4636; /* section headings */
+
+  --accent:       #3c8d8a; /* PRIMARY action (teal) */
+  --accent-2:     #2f6f6d; /* selection outline / deeper teal */
+  --accent-3:     #48a09d; /* hover */
+
+  --secondary:    #e2d2bf; /* secondary button bg */
+  --secondary-br: #b9a38c;
+
+  --danger:       #c14d36; /* destructive (delete) */
+  --danger-2:     #a53f2c; /* danger hover/active */
+
+  --success:      #3e7d4a; /* success states (optional toasts) */
+
+  --tile-bg:      #fffaf4; /* thumbnail letterbox */
+  --overlay:      rgba(0,0,0,0.35); /* modal backdrop */
+  --white:        #ffffff;
+  --cream-text:   #fffaf4;
+}
+
+/* ---------- Base ---------- */
+* { box-sizing: border-box; }
+
+html, body, #app {
+  height: 100%;
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+  color: var(--text);
+  background: var(--bg);
+}
+
+/* ---------- Layout ---------- */
+#app {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+}
+
+/* Sidebar / Actions */
+aside#actions {
+  background: var(--panel);
+  border-right: 1px solid var(--panel-edge);
+  padding: 12px;
+  overflow: auto;
+}
+
+aside h1 {
+  margin: 0 0 12px;
+  font-size: 18px;
+  background: #ede1d0; /* subtle header bar feel */
+  color: #3d2c20;
+  padding: 8px 12px;
+  margin-left: -12px;
+  margin-right: -12px;
+  border-bottom: 1px solid var(--panel-edge);
+}
+
+section {
+  margin-bottom: 16px;
+}
+
+section h3 {
+  margin: 12px 0 6px;
+  font-size: 14px;
+  color: var(--heading);
+  border-bottom: 1px solid #e6ddcf;
+  padding-bottom: 2px;
+}
+
+.row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin: 6px 0;
+}
+
+.path {
+  font-size: 12px;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---------- Buttons ---------- */
+/* Default: primary (teal) */
+button {
+  background: var(--accent);
+  border: 1px solid var(--accent-2);
+  color: var(--white);
+  border-radius: 6px;
+  padding: 6px 14px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
+  box-shadow: 0 1px 0 rgba(0,0,0,0.05);
+}
+
+button:hover {
+  background: var(--accent-3);
+  transform: translateY(-1px);
+}
+
+button:active {
+  background: var(--accent-2);
+  transform: translateY(0);
+}
+
+button:disabled {
+  background: #cfd9d9;
+  border-color: #b5c2c2;
+  color: #6e7a7a;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* Secondary variant (optional: add class="btn-secondary") */
+.btn-secondary {
+  background: var(--secondary);
+  border-color: var(--secondary-br);
+  color: #3a2d22;
+}
+.btn-secondary:hover { background: #eadbca; }
+.btn-secondary:active { background: #d6c3ae; }
+
+/* Danger variant (optional: add class="btn-danger") */
+.btn-danger {
+  background: var(--danger);
+  border-color: var(--danger-2);
+  color: var(--cream-text);
+}
+.btn-danger:hover { background: #cf5740; }
+.btn-danger:active { background: var(--danger-2); }
+
+/* ---------- Viewer / Grids ---------- */
+#viewer {
+  position: relative;
+  padding: 12px;
+  overflow: auto;
+}
+
+.grid { margin-bottom: 16px; }
+.grid.hidden { display: none; }
+
+.grid-title {
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--heading);
+}
+
+.grid-wrap {
+  display: grid;
+  gap: 8px;
+}
+
+/* columns per view size */
+.grid.small .grid-wrap { grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); }
+.grid.medium .grid-wrap { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+.grid.large .grid-wrap { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+
+/* ---------- Thumbnails ---------- */
+.tile {
+  position: relative;
+  border: 1px solid var(--panel-edge);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--tile-bg);
+  display: grid;
+  place-items: center;
+}
+
+/* fixed heights per size for tidy grids */
+.grid.small .tile  { height: 100px; }
+.grid.medium .tile { height: 150px; }
+.grid.large .tile  { height: 250px; }
+
+/* Let the image auto-size fully within the tile (no cropping) */
+.tile > img {
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  object-position: center center;
+  display: block;
+  background: transparent;
+}
+
+.tile .name {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  font-size: 12px;
+  background: rgba(0,0,0,0.55);
+  color: var(--cream-text);
+  padding: 2px 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* selection highlight matches theme */
+.tile.selected {
+  outline: 3px solid var(--accent-2);
+  box-shadow: 0 0 0 2px rgba(47,111,109,0.15) inset;
+}
+
+/* ---------- Modal (Viewer) ---------- */
+.modal {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: var(--overlay);
+}
+.modal.hidden { display: none; }
+
+.modal-card {
+  width: min(1000px, 92vw);
+  height: min(86vh, 720px);
+  background: #fdf4e6; /* slightly darker cream to distinguish from page */
+  border: 1px solid var(--panel-edge);
+  border-radius: 10px;
+  overflow: hidden;
+
+  display: grid;
+  grid-template-columns: 2fr 1fr;  /* image | meta/editor */
+}
+
+/* Modal image area */
+.modal-img {
+  position: relative;
+  background: #111;
+}
+.modal-img > img {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  object-position: center center;
+}
+
+/* Modal meta/editor pane */
+.modal-meta {
+  background: var(--panel);
+  border-left: 1px solid var(--panel-edge);
+  padding: 10px;
+  display: grid;
+  grid-template-rows: auto 1fr auto; /* filename | textarea | buttons */
+  gap: 8px;
+}
+
+#modal-tags {
+  width: 100%;
+  height: 100%;
+  min-height: 160px;
+  resize: none;
+  border: 1px solid var(--panel-edge-2);
+  background: #fffdf9;
+  padding: 6px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 13px;
+  color: var(--text);
+}
+
+/* ---- General hidden helper ---- */
+.hidden { display: none !important; }
+
+/* ---- Tabs ---- */
+.tabbar { display:flex; gap:8px; margin-bottom:8px; }
+.tabbar .tab {
+  background: var(--secondary);
+  border: 1px solid var(--secondary-br);
+  color: #3a2d22;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.tabbar .tab.active {
+  background: var(--accent);
+  border-color: var(--accent-2);
+  color: var(--white);
+}
+
+/* ---- Progress box ---- */
+.progress-box { display:grid; gap:6px; margin-top:6px; }
+.progress { height: 10px; border:1px solid var(--panel-edge); border-radius: 6px; overflow:hidden; background:#fffdf9; }
+.progress .bar { height:100%; width:0%; background: var(--accent); transition: width .2s ease; }
+.progress-status { font-size:12px; color: var(--muted); }
+
+
+/* ---------- Small-screen fallback ---------- */
+@media (max-width: 900px) {
+  .modal-card {
+    grid-template-columns: 1fr;
+    height: 88vh;
+  }
+  .modal-img { min-height: 50vh; }
+}
+
+/* ===== Auto‑Tagging: Prompt + Divider tweaks ===== */
+
+/* Space below the prompt section so it doesn't run into the divider */
+#autotag-top { margin-bottom: 12px; }
+
+/* Big, comfy prompt box (not full-bleed, not resizable) */
+#jc-prompt {
+  display: block;
+  width: clamp(460px, 72vw, 780px); /* not 100%: scales nicely but caps at 780px */
+  height: 200px;                    /* match your “bigger” screenshot vibe */
+  resize: none;                     /* no drag corner */
+  padding: 8px;
+  border: 1px solid var(--panel-edge-2);
+  background: #fffdf9;
+  color: var(--text);
+  font-size: 14px;
+  border-radius: 6px;
+}
+
+/* A subtle focus style to match theme */
+#jc-prompt:focus {
+  outline: 2px solid var(--accent-3);
+  outline-offset: 1px;
+}
+
+/* The divider is its own thin line; not draggable, not interactive */
+#autotag-split {
+  height: 10px;                     /* gives breathing room for the line */
+  border-top: 1px solid #e6ddcf;    /* subtle separator */
+  margin: 12px 0;
+  cursor: default;
+  pointer-events: none;             /* if any JS tried to make it draggable, this neuters it */
+}
+
+/* Keep some space before the folder viewer grid starts */
+#autotag-bottom { margin-top: 4px; }
+
+#jc-prompt-style { max-width: 420px; }
+#jc-save-template { padding: 6px 10px; }
+
+/* Compact control layout to match Caption length column */
+.compact-control {
+  min-width: 160px;
+  max-width: 180px;      /* keeps it short */
+  gap: 6px;
+}
+
+/* Checkbox label row */
+.compact-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+/* Slider label + slider */
+.compact-slider {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.compact-slider > label {
+  font-size: 12px;
+  opacity: .9;
+}
+
+/* Short slider track to mirror the max-tokens control */
+input.range.small {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 160px;          /* same visual width as your max-tokens slider */
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #e9e9ea, #d8d8da);
+  outline: none;
+}
+
+/* Thumbs */
+input.range.small::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px; height: 14px; border-radius: 50%;
+  background: #2f68ff; border: 0;
+  box-shadow: 0 1px 2px rgba(0,0,0,.2);
+  cursor: pointer;
+}
+input.range.small::-moz-range-track {
+  height: 6px; border-radius: 999px;
+  background: linear-gradient(180deg, #e9e9ea, #d8d8da);
+}
+input.range.small::-moz-range-thumb {
+  width: 14px; height: 14px; border-radius: 50%;
+  background: #2f68ff; border: 0;
+  box-shadow: 0 1px 2px rgba(0,0,0,.2);
+  cursor: pointer;
+}
+
+/* Disabled/unchecked visual (your JS already toggles disabled) */
+.compact-control .is-off,
+input.range.small:disabled {
+  opacity: .55;
+  pointer-events: none;
+}

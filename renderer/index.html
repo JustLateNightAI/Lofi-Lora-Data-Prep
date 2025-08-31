@@ -1,0 +1,49 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Lofi Data Prep</title>
+
+  <!-- CSP: allow talking to the local sidecar; no inline scripts -->
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self';
+                 connect-src 'self' http://127.0.0.1:5057;
+                 style-src 'self' 'unsafe-inline';
+                 img-src 'self' data: file:;">
+
+  <!-- Theme stylesheet (your JS can swap this between style.css / cyberLofistyle.css) -->
+  <link id="theme-link" rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav id="top-tabs" class="tabbar">
+    <button class="tab active" data-tab="home">Home</button>
+    <button class="tab" data-tab="autotag">Auto Tagging</button>
+  </nav>
+
+  <!-- Grid container gets replaced by the partials -->
+  <div id="app"></div>
+
+
+  <!-- Global Modal (kept here so all pages can use it) -->
+  <div id="modal" class="modal hidden" tabindex="-1" aria-hidden="true">
+    <div class="modal-card edge edge-45">
+      <div class="modal-img">
+        <img id="modal-image" alt="">
+      </div>
+      <div class="modal-meta">
+        <div class="row">
+          <span id="modal-filename"></span>
+        </div>
+        <textarea id="modal-tags" class="edge-thin" placeholder="No tag file"></textarea>
+        <div class="row">
+          <button id="modal-save" class="edge edge-135">Save</button>
+          <button id="modal-close" class="danger edge edge-135">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- App logic (no inline scripts) -->
+  <script type="module" src="renderer.js"></script>
+</body>
+</html>

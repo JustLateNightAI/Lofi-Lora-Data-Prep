@@ -1,0 +1,90 @@
+<!-- ===== HOME: Sidebar / Actions ===== -->
+<aside id="actions">
+  <h1 class="edge edge-135"><span class="bar">Lofi Data Prep</span></h1>
+
+  <section>
+    <h3>Folders</h3>
+    <div class="row">
+      <button id="pick-input" class="edge edge-135">Select Input</button>
+      <span id="input-path" class="path"></span>
+    </div>
+    <div class="row">
+      <button id="pick-output" class="edge edge-135">Select Output (optional)</button>
+      <span id="output-path" class="path"></span>
+    </div>
+  </section>
+
+  <section>
+    <h3>View</h3>
+    <div class="row">
+      <label>Input size</label>
+      <select id="input-view-size" class="edge-thin">
+        <option value="small">Small</option>
+        <option value="medium" selected>Medium</option>
+        <option value="large">Large</option>
+      </select>
+    </div>
+    <div class="row">
+      <label>Output size</label>
+      <select id="output-view-size" class="edge-thin">
+        <option value="small">Small</option>
+        <option value="medium" selected>Medium</option>
+        <option value="large">Large</option>
+      </select>
+    </div>
+  </section>
+
+  <section>
+    <h3>Selection</h3>
+    <div class="row">
+      <button id="toggle-select" class="edge edge-135">Selection Mode: Off</button>
+      <button id="delete-selected" class="danger edge edge-135" disabled>Delete Selected</button>
+    </div>
+  </section>
+
+  <section>
+    <h3>Search Tags</h3>
+    <input id="tag-search" type="text" class="edge-thin" placeholder="keyword..." />
+    <div class="row">
+      <button id="run-search" class="edge edge-135">Filter</button>
+      <button id="clear-search" class="edge edge-135">Clear</button>
+    </div>
+  </section>
+
+  <section>
+    <h3>Ops</h3>
+    <div class="row">
+      <label>Convert to</label>
+      <select id="convert-ext" class="edge-thin">
+        <option value=".png">.png</option>
+        <option value=".jpg">.jpg</option>
+        <option value=".webp">.webp</option>
+      </select>
+      <button id="convert-btn" class="edge edge-135" disabled>Convert</button>
+    </div>
+
+    <div class="row" style="flex-direction:column; align-items:flex-start; gap:6px;">
+      <label>Batch rename</label>
+      <input id="rename-base" class="edge-thin" placeholder="baseName (e.g., cortanaLora)" />
+      <button id="rename-btn" class="edge edge-135" disabled>Rename</button>
+    </div>
+
+    <div class="row" style="flex-direction:column; align-items:flex-start; gap:6px;">
+      <button id="shuffle-btn" class="edge edge-135" disabled>Shuffle dataset</button>
+      <button id="undo-btn" class="edge edge-135" disabled>Undo</button>
+    </div>
+  </section>
+</aside>
+
+<!-- ===== HOME: Viewer ===== -->
+<main id="viewer">
+  <div id="input-grid" class="grid medium">
+    <div class="grid-title">Input Folder</div>
+    <div class="grid-wrap" id="input-wrap"></div>
+  </div>
+
+  <div id="output-grid" class="grid medium hidden">
+    <div class="grid-title">Output Folder</div>
+    <div class="grid-wrap" id="output-wrap"></div>
+  </div>
+</main>

@@ -1,0 +1,76 @@
+{
+  "name": "lofi-data-prep",
+  "version": "0.1.0",
+  "description": "GUI tool for curating LoRA datasets: pair-safe rename/shuffle/convert with tag editing.",
+  "productName": "Lofi Data Prep",
+  "appId": "com.lofi.dataprep",
+  "author": "Lofi",
+  "license": "MIT",
+  "main": "main.js",
+  "scripts": {
+    "dev": "electron .",
+    "postinstall": "electron-builder install-app-deps",
+    "build": "electron-builder -mwl",
+    "dist:win": "electron-builder --win"
+  },
+  "dependencies": {
+    "electron-updater": "^6.3.9",
+    "fast-glob": "^3.3.2",
+    "fs-extra": "^11.2.0",
+    "mime-types": "^2.1.35",
+    "sharp": "^0.33.5"
+  },
+  "devDependencies": {
+    "electron": "^31.2.0",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.lofi.dataprep",
+    "productName": "Lofi Data Prep",
+    "files": [
+      "main.js",
+      "preload.js",
+      "actions/**/*",
+      "renderer/**/*",
+      "package.json"
+    ],
+    "directories": {
+      "buildResources": "build",
+      "output": "dist"
+    },
+    "extraResources": [
+      { "from": "build/sidecar", "to": "sidecar" }
+    ],
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Graphics",
+      "icon": "build/icon.png",
+      "desktop": {
+        "Name": "Lofi Data Prep",
+        "Comment": "Curate LoRA datasets (pair-safe ops, tag edit, shuffle/rename/convert)",
+        "Terminal": "false",
+        "Type": "Application",
+        "Categories": "Graphics;Utility;"
+      }
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Lofi Data Prep"
+    },
+    "mac": {
+      "category": "public.app-category.photography",
+      "target": "dmg",
+      "icon": "build/icon.png"
+    }
+  }
+}

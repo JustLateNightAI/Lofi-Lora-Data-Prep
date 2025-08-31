@@ -1,0 +1,23 @@
+# python
+__pycache__/
+*.pyc
+.venv/
+
+# node / electron
+node_modules/
+dist/
+build/
+*.log
+
+# editor cruft
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# misc
+*.zip
+*.bak
+*.old
+*.tmp
+
