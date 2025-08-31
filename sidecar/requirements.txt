@@ -1,0 +1,8 @@
+flask
+pillow
+torch
+transformers
+bitsandbytes
+accelerate
+safetensors
+
