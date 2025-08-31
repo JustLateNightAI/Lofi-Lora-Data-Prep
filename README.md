@@ -78,6 +78,7 @@ A desktop tool (Electron + Python sidecar) for curating LoRA datasets: rename, s
 
 ## Screenshots
 
+![Screenshot](readme_imgs/1.png)
 
 ## License
 
