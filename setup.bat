@@ -1,62 +1,96 @@
-@echo off
+@echo on
 setlocal
 cd /d "%~dp0"
+title Lofi Data Prep - Setup
+
 echo === Lofi Data Prep: First-time Setup ===
 
-REM ---- Detect Python ----
+REM ---- Python detection ----
 where py >nul 2>&1
 if %errorlevel%==0 ( set "PY=py -3" ) else (
-  where python >nul 2>&1 || (echo [ERROR] Python not found. Install Python 3.x and rerun.& pause & exit /b 1)
+  where python >nul 2>&1 || (echo [ERROR] Python 3 not found. Install it and rerun. & goto :end)
   set "PY=python"
 )
 
-REM ---- Sidecar folder (prefer .\sidecar, else repo root) ----
+REM ---- Sidecar venv ----
 set "SIDECAR_DIR=sidecar"
 if not exist "%SIDECAR_DIR%\server.py" (
   set "SIDECAR_DIR=."
   if not exist "server.py" (
     echo [ERROR] Could not find server.py in sidecar\ or repo root.
-    pause & exit /b 1
+    goto :end
   )
 )
 
-REM ---- Create venv & install Python deps ----
+echo === Creating Python venv in %SIDECAR_DIR% ===
 pushd "%SIDECAR_DIR%"
-%PY% -m venv .venv || (echo [ERROR] Failed to create venv.& popd & pause & exit /b 1)
+%PY% -m venv .venv
+if errorlevel 1 (
+  echo [ERROR] Failed to create venv.
+  popd
+  goto :end
+)
+
 call .venv\Scripts\activate.bat
 python -m pip install --upgrade pip
 
-if not exist requirements.txt (
-  echo Creating minimal requirements.txt ...
-  >requirements.txt echo flask
-  >>requirements.txt echo pillow
-  >>requirements.txt echo torch
-  >>requirements.txt echo transformers
-  >>requirements.txt echo bitsandbytes
-  >>requirements.txt echo accelerate
-  >>requirements.txt echo safetensors
+echo === Writing requirements.txt ===
+>requirements.txt (
+  echo flask
+  echo pillow
+  echo torch
+  echo transformers
+  echo bitsandbytes
+  echo accelerate
+  echo safetensors
 )
 
-echo Installing Python dependencies...
-pip install -r requirements.txt || (
-  echo.
-  echo [NOTE] If PyTorch failed, install it from https://pytorch.org (matching your CUDA), then re-run setup.bat
-  popd & pause & exit /b 1
+echo === Installing Python deps ===
+pip install -r requirements.txt
+if errorlevel 1 (
+  echo [ERROR] pip install failed.
+  popd
+  goto :end
+)
+
+echo === Verifying core imports ===
+python -c "import flask, PIL, torch, transformers; print('Python deps OK')"
+if errorlevel 1 (
+  echo [ERROR] Some Python packages are missing.
+  popd
+  goto :end
 )
 popd
 
-REM ---- Detect Node/NPM and install Electron deps (if package.json exists) ----
+REM ---- Node/Electron setup ----
 if exist package.json (
-  where node >nul 2>&1 || (echo [ERROR] Node.js not found. Install from https://nodejs.org and rerun.& pause & exit /b 1)
-  where npm  >nul 2>&1 || (echo [ERROR] NPM not found. Ensure Node.js installed correctly.& pause & exit /b 1)
+  where node >nul 2>&1 || (echo [ERROR] Node.js not found. Install from https://nodejs.org & goto :end)
+  where npm  >nul 2>&1  || (echo [ERROR] npm not found. Fix Node install. & goto :end)
 
-  echo Installing npm dependencies...
-  npm install || (echo [ERROR] npm install failed.& pause & exit /b 1)
+  echo === Installing npm dependencies ===
+  if exist package-lock.json (
+    npm ci
+    if errorlevel 1 (
+      echo [WARN] npm ci failed, falling back to npm install
+      npm install
+    )
+  ) else (
+    npm install
+  )
+
+  echo === Checking Electron ===
+  npx electron -v
+  if errorlevel 1 (
+    echo [ERROR] Electron not installed. Run: npm i -D electron
+    goto :end
+  )
+  echo Node/Electron ready.
 ) else (
-  echo (No package.json in repo root; skipping npm install)
+  echo (No package.json in repo root; skipping npm setup)
 )
 
+:end
 echo.
-echo ✅ Setup complete. Use run.bat to launch the tool.
-pause
+echo [SETUP FINISHED] Press any key to close this window...
+pause >nul
 

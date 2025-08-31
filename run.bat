@@ -1,36 +1,30 @@
-@echo off
+@echo on
 setlocal
 cd /d "%~dp0"
+title Lofi Data Prep - Start
 
-REM ---- Config ----
-set "HOST=127.0.0.1"
-set "PORT=5057"
-REM Uncomment to pick a specific GPU (0-based): set CUDA_VISIBLE_DEVICES=0
-
-REM ---- Locate sidecar ----
-set "SIDECAR_DIR=sidecar"
-if not exist "%SIDECAR_DIR%\server.py" set "SIDECAR_DIR=."
-if not exist "%SIDECAR_DIR%\server.py" (
-  echo [ERROR] Could not find server.py in sidecar\ or repo root.
-  pause & exit /b 1
+echo === Checking sidecar venv ===
+if not exist sidecar\.venv\Scripts\activate.bat (
+  echo [ERROR] sidecar\.venv not found. Run setup.bat first.
+  goto :end
 )
 
-REM ---- Start sidecar in its own window ----
-if not exist "%SIDECAR_DIR%\.venv\Scripts\activate.bat" (
-  echo [ERROR] Virtual environment not found. Run setup.bat first.
-  pause & exit /b 1
-)
+echo === Activating venv ===
+call sidecar\.venv\Scripts\activate.bat
+echo Using Python: %PYTHONHOME% %PYTHONPATH%
+python -c "import sys; print('Python exe:', sys.executable)"
 
-echo Starting sidecar on %HOST%:%PORT% ...
-start "LDP Sidecar" cmd /k "cd /d %SIDECAR_DIR% && call .venv\Scripts\activate.bat && set CUDA_VISIBLE_DEVICES=%CUDA_VISIBLE_DEVICES% && python server.py --host %HOST% --port %PORT%"
+echo === Checking npm ===
+where npm || (echo [ERROR] npm not found. Install Node.js from https://nodejs.org & goto :end)
 
-REM ---- Start Electron app (if package.json exists) ----
-if exist package.json (
-  echo Starting Electron app...
-  start "Lofi Data Prep" cmd /k "npm run dev"
-) else (
-  echo (No package.json in repo root; Electron app not started)
-)
+echo === Launching Electron (npm run dev) ===
+REM run in this SAME window; if it crashes, you’ll see the error and code
+call npm run dev
+echo.
+echo (npm exited with code %errorlevel%)
 
-echo Done. Two windows should open: Sidecar and App.
+:end
+echo.
+echo [DONE] Press any key to close this window...
+pause >nul
 
