@@ -5,7 +5,7 @@ A desktop tool (Electron + Python sidecar) for curating LoRA datasets: rename, s
 ## Features
 
 * GUI for dataset management (rename, shuffle, convert formats)
-* Automated image captioning via JoyCaption (LLaVA-based)
+* Automated image captioning via JoyCaption (LLaVA-based) (currently janky, but works)
 * Tag editing and prompt customization
 * Works with CPU or NVIDIA GPU (INT8, NF4, BF16 quantization)
 * Built-in GPU/VRAM monitor
