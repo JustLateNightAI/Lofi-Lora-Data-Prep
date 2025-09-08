@@ -16,6 +16,11 @@ A desktop tool (Electron + Python sidecar) for curating LoRA datasets: rename, s
 * Node.js + npm (from [https://nodejs.org](https://nodejs.org))
 * NVIDIA GPU (optional for acceleration — CPU mode works everywhere)
 
+
+## Attibutions 
+This project uses JoyCaption for automatic image captioning. https://github.com/fpgaminer/joycaption
+JoyCaption is licensed under the Apache License 2.0 https://github.com/fpgaminer/joycaption/blob/main/LICENSE
+
 ## Quickstart
 
 ### Windows
@@ -83,4 +88,4 @@ A desktop tool (Electron + Python sidecar) for curating LoRA datasets: rename, s
 
 ## License
 
-MIT License
+Creative Commons BY-NC 4.0 License
