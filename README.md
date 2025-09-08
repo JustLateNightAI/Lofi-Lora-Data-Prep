@@ -5,7 +5,7 @@ A desktop tool (Electron + Python sidecar) for curating LoRA datasets: rename, s
 ## Discord
 https://discord.gg/zxRACHM
 Maybe I'll help you with your errors, maybe I wont. 
-Depends on my coffee suppy
+Depends on my coffee supply
 
 ## Features
 
