@@ -54,8 +54,8 @@ JoyCaption is licensed under the Apache License 2.0 https://github.com/fpgaminer
 
    ```bash
    cd sidecar
-   python3 -m venv .venv
-   source .venv/bin/activate
+   python3 -m venv venv
+   source venv/bin/activate
    pip install --upgrade pip
    pip install -r requirements.txt
    # Optional: install torch with CUDA (NVIDIA only)
