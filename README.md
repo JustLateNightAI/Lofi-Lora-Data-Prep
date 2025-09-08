@@ -71,7 +71,7 @@ JoyCaption is licensed under the Apache License 2.0 https://github.com/fpgaminer
 
    ```bash
    # Make sure your venv is active so the sidecar uses it
-   source sidecar/.venv/bin/activate
+   source sidecar/venv/bin/activate
    npm run dev
    ```
 
