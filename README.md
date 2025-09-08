@@ -2,6 +2,11 @@
 
 A desktop tool (Electron + Python sidecar) for curating LoRA datasets: rename, shuffle, convert, and tag images with automated captioning.
 
+## Discord
+https://discord.gg/zxRACHM
+Maybe I'll help you with your errors, maybe I wont. 
+Depends on my coffee suppy
+
 ## Features
 
 * GUI for dataset management (rename, shuffle, convert formats)
