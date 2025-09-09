@@ -29,6 +29,7 @@ JoyCaption is licensed under the Apache License 2.0 https://github.com/fpgaminer
 ## Quickstart
 
 ### Windows
+The tool works, but is currently having a few bugs on windows that it doesnt have on linux, i am working on patching them.
 
 1. Clone or download this repo
 
