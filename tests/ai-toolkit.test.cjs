@@ -45,6 +45,7 @@ test('WebP exports become PNG without changing original images; missing captions
   assert.equal(metadata.format, 'png'); assert.equal(metadata.width, 13); assert.equal(metadata.height, 7);
   assert.equal(result.converted, 1); assert.equal(result.missingCaptions, 1); assert.equal(result.captions, 0);
   assert.deepEqual(await fs.readFile(imagePath), original);
+  await fs.rename(imagePath, path.join(f.sourceDir, 'renamed.webp'));
 });
 test('existing datasets, including case variants, are never merged or overwritten', async t => {
   const f = await fixture(t), existing = path.join(f.toolkitDir, 'datasets', 'MY_DATASET');
