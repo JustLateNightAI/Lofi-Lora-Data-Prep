@@ -1,46 +1,29 @@
-// preload.js
 const { contextBridge, ipcRenderer } = require('electron');
-
-// ---- JoyCaption bridge ----
-contextBridge.exposeInMainWorld('joy', {
-  prompt: (imagePath, opts) => ipcRenderer.invoke('joy:prompt', { imagePath, ...opts }),
-});
-
-// ---- LDP (your existing app bridge) ----
+const invoke = async (channel, payload) => {
+  const result = await ipcRenderer.invoke(channel, payload);
+  if (!result.ok) throw new Error(result.error);
+  return result.value;
+};
 contextBridge.exposeInMainWorld('LDP', {
-  // dialogs
-  selectFolder: () => ipcRenderer.invoke('dialog:select-folder'),
-
-  // folder scan
-  scanFolder: (dir) => ipcRenderer.invoke('folder:scan', dir),
-
-  // actions
-  convert:      (payload) => ipcRenderer.invoke('action:convert', payload),
-  shuffle:      (payload) => ipcRenderer.invoke('action:shuffle', payload),
-  renameBatch:  (payload) => ipcRenderer.invoke('action:rename', payload),
-  deleteItems:  (payload) => ipcRenderer.invoke('action:delete', payload),
-
-  // undo
-  undo: () => ipcRenderer.invoke('undo:perform'),
-
-  // tag files
-  readText: (path) => ipcRenderer.invoke('file:readText', path),
-
-  // Accept BOTH forms:
-  //   writeText(path, text)
-  //   writeText({ path, text })
-  writeText: (arg1, arg2) => {
-    const payload = (typeof arg1 === 'string')
-      ? { path: arg1, text: arg2 }
-      : (arg1 || {});
-    return ipcRenderer.invoke('file:writeText', payload);
-  },
-});
-
-// ---- File‑based Templates bridge ----
-contextBridge.exposeInMainWorld('Templates', {
-  list:   () => ipcRenderer.invoke('templates:list'),
-  read:   (label) => ipcRenderer.invoke('templates:read', label),
-  save:   ({ label, content }) => ipcRenderer.invoke('templates:save', { label, content }),
-  remove: (label) => ipcRenderer.invoke('templates:delete', label),
+  state: () => invoke('app:state'),
+  pickFolder: kind => invoke('folder:pick', kind),
+  clearOutput: () => invoke('folder:clear-output'),
+  scan: dir => invoke('folder:scan', dir),
+  readCaption: file => invoke('caption:read', file),
+  saveCaption: data => invoke('caption:save', data),
+  action: data => invoke('action:run', data),
+  undo: () => invoke('undo:perform'),
+  saveApi: data => invoke('settings:api', data),
+  models: data => invoke('api:models', data),
+  startJob: data => invoke('job:start', data),
+  cancelJob: () => invoke('job:cancel'),
+  resumeJob: () => invoke('job:resume'),
+  reviewCaption: data => invoke('job:review', data),
+  templates: () => invoke('templates:list'),
+  saveTemplate: data => invoke('templates:save', data),
+  onJob: callback => {
+    const listener = (_event, job) => callback(job);
+    ipcRenderer.on('job:update', listener);
+    return () => ipcRenderer.removeListener('job:update', listener);
+  }
 });

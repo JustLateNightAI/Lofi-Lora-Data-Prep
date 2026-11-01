@@ -20,4 +20,6 @@ Thumbs.db
 *.bak
 *.old
 *.tmp
+test-results/
+playwright-report/
 

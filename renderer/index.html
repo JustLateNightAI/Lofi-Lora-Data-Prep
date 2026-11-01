@@ -1,49 +1,78 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="utf-8" />
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'none'; img-src 'self' ldp-image:; style-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
   <title>Lofi Data Prep</title>
-
-  <!-- CSP: allow talking to the local sidecar; no inline scripts -->
-  <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self';
-                 connect-src 'self' http://127.0.0.1:5057;
-                 style-src 'self' 'unsafe-inline';
-                 img-src 'self' data: file:;">
-
-  <!-- Theme stylesheet (your JS can swap this between style.css / cyberLofistyle.css) -->
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <nav id="top-tabs" class="tabbar">
-    <button class="tab active" data-tab="home">Home</button>
-    <button class="tab" data-tab="autotag">Auto Tagging</button>
-  </nav>
-
-  <!-- Grid container gets replaced by the partials -->
-  <div id="app"></div>
-
-
-  <!-- Global Modal (kept here so all pages can use it) -->
-  <div id="modal" class="modal hidden" tabindex="-1" aria-hidden="true">
-    <div class="modal-card edge edge-45">
-      <div class="modal-img">
-        <img id="modal-image" alt="">
-      </div>
-      <div class="modal-meta">
-        <div class="row">
-          <span id="modal-filename"></span>
+  <header><div><h1>Lofi Data Prep</h1><p>Curate images. Refine captions. Keep your originals recoverable.</p></div><button id="undo">Undo last change</button></header>
+  <div id="status" role="status" aria-live="polite">Loading…</div>
+  <div class="layout">
+    <aside>
+      <section><h2>Dataset</h2>
+        <button id="pick-input">Choose input folder</button><p id="input-path" class="path">No folder selected</p>
+        <button id="pick-output">Choose output folder</button><p id="output-path" class="path">Optional: copy operations here</p><button id="clear-output" class="quiet">Clear output</button>
+        <label>Working folder<select id="working-folder"><option value="input">Input</option><option value="output">Output</option></select></label>
+        <button id="refresh">Refresh folder</button>
+      </section>
+      <section><h2>Selection</h2>
+        <label>Apply to<select id="scope"><option value="visible">All visible images</option><option value="selected">Selected images only</option></select></label>
+        <div class="row"><button id="select-all" class="quiet">Select visible</button><button id="select-none" class="quiet">Clear selection</button></div>
+        <p id="selection-count">0 selected</p>
+      </section>
+      <section><h2>File operations</h2><p id="operation-target" class="hint"></p>
+        <label>Rename prefix<input id="rename-base" placeholder="my_dataset" maxlength="100"></label>
+        <button id="rename">Rename</button>
+        <div class="row"><label>Format<select id="convert-ext"><option value=".png">PNG</option><option value=".jpg">JPEG</option><option value=".webp">WebP</option></select></label><button id="convert">Convert</button></div>
+        <button id="shuffle">Shuffle &amp; number</button>
+        <button id="delete" class="danger">Delete selected</button>
+        <p class="hint">Changes are backed up for Undo, including across restarts. Existing destination files are never replaced.</p>
+      </section>
+    </aside>
+    <main>
+      <details id="api-panel"><summary>Vision API settings</summary>
+        <div class="settings-grid">
+          <label>API base URL<input id="api-url" type="url" placeholder="https://api.openai.com/v1"></label>
+          <div><label>Vision model<select id="api-model" aria-describedby="model-status"><option value="">Load models to choose…</option></select></label>
+            <button id="refresh-models" class="quiet">Refresh models</button><p id="model-status" class="hint" role="status">Enter an API address and key, if required.</p>
+          </div>
+          <label>API key<input id="api-key" type="password" autocomplete="off" placeholder="Leave blank to keep current key"></label>
+          <div><label class="inline"><input id="remember-key" type="checkbox"> Remember key securely</label><p id="key-status" class="hint"></p><button id="forget-key" class="quiet">Forget key</button></div>
+          <label>Token budget (thinking + caption)<input id="api-tokens" type="number" min="32" max="65536" value="2048"></label>
+          <label>Thinking / reasoning<select id="api-reasoning"><option value="">Server default</option><option value="none">Off (if supported)</option><option value="minimal">Minimal</option><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option><option value="xhigh">Extra high</option><option value="max">Maximum</option></select></label>
+          <label>Token parameter<select id="api-token-field"><option value="max_completion_tokens">max_completion_tokens</option><option value="max_tokens">max_tokens (compatible servers)</option></select></label>
+          <label>Temperature (optional)<input id="api-temperature" type="number" min="0" max="2" step="0.1" placeholder="Provider default"></label>
+          <label>Maximum image side<select id="api-image-side"><option>768</option><option>1024</option><option selected>1536</option><option>2048</option></select></label>
         </div>
-        <textarea id="modal-tags" class="edge-thin" placeholder="No tag file"></textarea>
-        <div class="row">
-          <button id="modal-save" class="edge edge-135">Save</button>
-          <button id="modal-close" class="danger edge edge-135">Close</button>
-        </div>
-      </div>
-    </div>
+        <p class="hint">Thinking can consume the token budget before the caption is written. Try Off for fast captioning, or allow a larger budget. Available reasoning levels depend on your model and server; use Server default if unsupported.</p>
+        <label>Prompt preset<select id="prompt-preset"><option value="descriptive">Descriptive caption</option><option value="tags">Comma-separated tags</option><option value="custom">Custom</option></select></label>
+        <label>Caption prompt<textarea id="api-prompt" rows="4"></textarea></label>
+        <div class="row"><input id="template-name" placeholder="New preset name" aria-label="New preset name"><button id="save-template">Save preset</button><button id="save-api" class="primary">Save API settings</button></div>
+        <p class="hint">Uses Chat Completions with image inputs. Local servers can use localhost or a private LAN address, such as http://192.168.1.2:8000/v1. Images are sent only when you start or resume a job. A provider may charge per request.</p>
+      </details>
+      <section class="caption-panel"><h2>Caption with vision</h2>
+        <p id="caption-target">Choose a working folder.</p>
+        <div class="row"><label>Existing captions<select id="caption-mode"><option value="missing">Keep existing; caption missing only</option><option value="review">Review every result before saving</option><option value="replace">Replace captions (with Undo backups)</option></select></label>
+          <button id="generate" class="primary">Start captioning</button><button id="cancel-job" disabled>Cancel</button><button id="resume-job" disabled>Resume / retry with saved settings</button></div>
+        <p class="hint">Retries use your saved API settings and keep completed captions. Server errors and exhausted token budgets pause the batch so remaining images stay queued.</p>
+        <p id="job-status" role="status">No caption job yet.</p><progress id="job-progress" max="1" value="0"></progress>
+        <p id="job-pause-reason" class="warning" role="status" hidden></p>
+        <div id="job-results"></div>
+      </section>
+      <div class="toolbar"><label class="search">Filter filenames and captions<input id="search" type="search" placeholder="Search…"></label><span id="image-count"></span></div>
+      <p id="warnings" class="warning"></p>
+      <div id="grid" class="grid"></div>
+      <div class="pagination"><button id="previous-page">Previous page</button><span id="page-number"></span><button id="next-page">Next page</button></div>
+    </main>
   </div>
-
-  <!-- App logic (no inline scripts) -->
+  <dialog id="editor"><div class="editor-layout"><img id="editor-image" alt="Selected dataset image"><div>
+    <h2 id="editor-name"></h2><p id="editor-mode"></p><details id="original-caption"><summary>Current caption</summary><pre id="editor-original"></pre></details>
+    <label>Caption<textarea id="editor-text" rows="12"></textarea></label><p id="editor-status" role="status"></p>
+    <div class="row"><button id="editor-prev">Previous</button><button id="editor-next">Next</button><button id="editor-save" class="primary">Save caption</button><button id="editor-discard">Discard suggestion</button><button id="editor-close">Close</button></div>
+  </div></div></dialog>
   <script type="module" src="renderer.js"></script>
 </body>
 </html>

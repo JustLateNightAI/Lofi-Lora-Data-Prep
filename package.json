@@ -1,28 +1,30 @@
 {
   "name": "lofi-data-prep",
-  "version": "0.1.0",
-  "description": "GUI tool for curating LoRA datasets: pair-safe rename/shuffle/convert with tag editing.",
+  "version": "0.2.0",
+  "description": "Desktop LoRA dataset preparation with recoverable file operations and vision API captioning.",
   "productName": "Lofi Data Prep",
   "appId": "com.lofi.dataprep",
   "author": "Lofi",
-  "license": "MIT",
+  "license": "CC-BY-NC-4.0",
   "main": "main.js",
   "scripts": {
     "dev": "electron .",
-    "postinstall": "electron-builder install-app-deps",
-    "build": "electron-builder -mwl",
-    "dist:win": "electron-builder --win"
+    "test": "node --test tests/*.test.cjs",
+    "test:ui": "playwright test",
+    "check": "eslint .",
+    "build": "electron-builder",
+    "dist:linux": "electron-builder --linux",
+    "dist:win": "electron-builder --win",
+    "install:electron": "node node_modules/electron/install.js"
   },
   "dependencies": {
-    "electron-updater": "^6.3.9",
-    "fast-glob": "^3.3.2",
-    "fs-extra": "^11.2.0",
-    "mime-types": "^2.1.35",
-    "sharp": "^0.33.5"
+    "sharp": "0.35.5"
   },
   "devDependencies": {
-    "electron": "^31.2.0",
-    "electron-builder": "^24.13.3"
+    "electron": "45.2.1",
+    "electron-builder": "26.18.0",
+    "@playwright/test": "1.64.1",
+    "eslint": "10.14.0"
   },
   "build": {
     "appId": "com.lofi.dataprep",
@@ -31,15 +33,18 @@
       "main.js",
       "preload.js",
       "actions/**/*",
+      "lib/**/*",
       "renderer/**/*",
-      "package.json"
+      "package.json",
+      "License"
     ],
     "directories": {
       "buildResources": "build",
       "output": "dist"
     },
-    "extraResources": [
-      { "from": "build/sidecar", "to": "sidecar" }
+    "asarUnpack": [
+      "**/node_modules/sharp/**/*",
+      "**/node_modules/@img/**/*"
     ],
     "linux": {
       "target": [
@@ -47,18 +52,10 @@
         "deb"
       ],
       "category": "Graphics",
-      "icon": "build/icon.png",
-      "desktop": {
-        "Name": "Lofi Data Prep",
-        "Comment": "Curate LoRA datasets (pair-safe ops, tag edit, shuffle/rename/convert)",
-        "Terminal": "false",
-        "Type": "Application",
-        "Categories": "Graphics;Utility;"
-      }
+      "maintainer": "JustLateNightAI"
     },
     "win": {
-      "target": "nsis",
-      "icon": "build/icon.png"
+      "target": "nsis"
     },
     "nsis": {
       "oneClick": false,
@@ -66,11 +63,9 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "Lofi Data Prep"
-    },
-    "mac": {
-      "category": "public.app-category.photography",
-      "target": "dmg",
-      "icon": "build/icon.png"
     }
+  },
+  "engines": {
+    "node": ">=22.12.0"
   }
 }
