@@ -36,7 +36,7 @@ A graphical desktop and Electron's normal Linux system libraries are required. K
 5. Click an image to edit its caption. Close/navigation prompts before discarding edits. Filenames with spaces, Unicode, uppercase extensions, and URL punctuation are supported.
 6. Use **Undo last change** to restore the latest file operation or caption save, including after restarting.
 
-Destination collisions fail before writes. Multiple image formats sharing a stem, such as `photo.jpg` and `photo.png`, are marked ambiguous because they share `photo.txt`; resolve those names before paired operations. Same-format conversion is skipped. Conversion normalizes EXIF orientation. JPEG conversion flattens transparency against the image library's default background; use PNG/WebP when transparency matters.
+Destination collisions fail before writes. Multiple image formats sharing a stem, such as `photo.jpg` and `photo.png`, are marked ambiguous because they share `photo.txt`; resolve those names before paired operations. Same-format conversion is skipped in place and copies the original bytes when using an output folder, including uppercase extensions and JPG/JPEG aliases. Conversion between formats normalizes EXIF orientation. JPEG conversion flattens transparency against the image library's default background; use PNG/WebP when transparency matters.
 
 ## Vision API captioning
 

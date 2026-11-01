@@ -62,16 +62,20 @@ async function shuffle(payload) {
   return applyPairs('Shuffle', plan, !!payload.outDir);
 }
 async function convert(payload) {
-  const format = { '.png': 'png', '.jpg': 'jpeg', '.jpeg': 'jpeg', '.webp': 'webp' }[payload.targetExt];
+  const formats = { '.png': 'png', '.jpg': 'jpeg', '.jpeg': 'jpeg', '.webp': 'webp' };
+  const format = formats[payload.targetExt];
   if (!format) throw new Error('Unsupported output format.');
   const items = pickTargets(payload.items, payload.scope, payload.selectedPaths);
   if (items.some(i => i.ambiguous)) throw new Error('Resolve duplicate image/caption stems before converting.');
+  const sameFormat = item => formats[path.extname(item.imagePath).toLowerCase()] === format;
+  const converting = items.filter(item => payload.outDir || !sameFormat(item));
+  const skipped = items.length - converting.length;
+  const destination = item => path.join(payload.outDir || path.dirname(item.imagePath), `${stem(item.imagePath)}${payload.targetExt}`);
+  await planPairs({ ...payload, items: converting, scope: 'all' }, destination);
   const changes = [];
-  let skipped = 0;
-  for (const item of items) {
-    const target = path.join(payload.outDir || path.dirname(item.imagePath), `${stem(item.imagePath)}${payload.targetExt}`);
-    if (path.resolve(target) === path.resolve(item.imagePath)) { skipped++; continue; }
-    changes.push({ target, expected: null, render: file => sharp(item.imagePath).rotate().toFormat(format, { quality: 92 }).toFile(file) });
+  for (const item of converting) {
+    const target = destination(item);
+    changes.push({ target, expected: null, ...(sameFormat(item) ? { source: item.imagePath } : { render: file => sharp(item.imagePath).rotate().toFormat(format, { quality: 92 }).toFile(file) }) });
     if (payload.outDir && path.resolve(payload.outDir) !== path.dirname(item.imagePath)) {
       const tag = path.join(payload.outDir, `${stem(item.imagePath)}.txt`);
       if (item.tagPath) changes.push({ target: tag, source: item.tagPath, expected: null });

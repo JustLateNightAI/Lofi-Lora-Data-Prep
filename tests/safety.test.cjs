@@ -64,6 +64,26 @@ test('failed image decoding leaves the whole batch unchanged', async () => {
   await files({ 'b.png': 'corrupt' }); const before = await snapshot();
   await assert.rejects(operations.convert(await payload({ targetExt: '.jpg' }))); assert.deepEqual(await snapshot(), before);
 });
+test('same-format conversion preserves uppercase originals and copies their bytes unchanged', async () => {
+  await sharp({ create: { width: 3, height: 2, channels: 3, background: 'blue' } }).jpeg().toFile(path.join(dir, 'PHOTO.JPG'));
+  await files({ 'PHOTO.TXT': 'caption' }); const before = await snapshot();
+  assert.equal((await operations.convert(await payload({ targetExt: '.jpeg' }))).skipped, 1);
+  assert.deepEqual(await snapshot(), before);
+  const output = path.join(root, 'output'); await fs.mkdir(output);
+  await operations.convert(await payload({ targetExt: '.jpg', outDir: output }));
+  assert.equal(await digest(path.join(output, 'PHOTO.jpg')), await digest(path.join(dir, 'PHOTO.JPG')));
+  assert.equal(await fs.readFile(path.join(output, 'PHOTO.txt'), 'utf8'), 'caption');
+  assert.deepEqual(await snapshot(), before);
+});
+test('conversion copy rejects an occupied stem in a different image format', async () => {
+  await files({ 'photo.png': 'source' }); const before = await snapshot();
+  const output = path.join(root, 'output'); await fs.mkdir(output);
+  await fs.writeFile(path.join(output, 'PHOTO.webp'), 'unrelated');
+  await assert.rejects(operations.convert(await payload({ targetExt: '.jpg', outDir: output })), /stem already exists/);
+  assert.deepEqual(await fs.readdir(output), ['PHOTO.webp']);
+  assert.equal(await fs.readFile(path.join(output, 'PHOTO.webp'), 'utf8'), 'unrelated');
+  assert.deepEqual(await snapshot(), before);
+});
 test('scan pairs uppercase extensions and encodes URL punctuation', async () => {
   await files({ 'PHOTO #1.PNG': 'image', 'PHOTO #1.txt': 'caption' });
   const item = (await scan(dir)).items[0];
