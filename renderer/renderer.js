@@ -59,7 +59,11 @@ function controls() {
   const unavailable = busy() || !dir();
   for (const id of ['rename','convert','shuffle','generate']) $(id).disabled = unavailable || !targets().length;
   $('delete').disabled = unavailable || !state.selected.size;
-  for (const id of ['undo','pick-input','pick-output','clear-output','working-folder','save-api','forget-key','save-template']) $(id).disabled = !!busy();
+  for (const id of ['undo','pick-input','pick-output','clear-output','working-folder','save-api','forget-key','save-template','pick-toolkit','save-toolkit','clear-toolkit','toolkit-path','toolkit-name']) $(id).disabled = !!busy();
+  $('export-toolkit').disabled = unavailable || !targets().length || !state.settings?.toolkitDir || !$('toolkit-name').value.trim();
+  const toolkit = state.settings?.toolkitDir;
+  const separator = toolkit?.includes('\\') ? '\\' : '/';
+  $('toolkit-export-target').textContent = toolkit ? `${targets().length} images → ${toolkit}${separator}datasets${separator}${$('toolkit-name').value.trim() || '<dataset-name>'}` : 'Choose your AI Toolkit folder in export settings.';
   $('cancel-job').disabled = !state.job?.running;
   $('resume-job').disabled = !!busy() || !state.job?.items.some(i => ['pending','failed','cancelled'].includes(i.status));
   $('selection-count').textContent = `${state.selected.size} selected · ${targets().length} in operation`;
@@ -75,6 +79,8 @@ async function task(fn) {
 }
 function paintSettings() {
   const s = state.settings, a = s.api;
+  $('toolkit-path').value = s.toolkitDir || '';
+  $('toolkit-saved-path').textContent = s.toolkitDir ? `Saved folder: ${s.toolkitDir}` : 'No AI Toolkit folder saved.';
   $('input-path').textContent = s.inputDir || 'No folder selected';
   $('output-path').textContent = s.outputDir || 'Optional: copy operations here';
   $('working-folder').querySelector('[value="output"]').disabled = !s.outputDir;
@@ -95,6 +101,7 @@ async function refresh() {
   const version = ++state.scanVersion;
   state.captions.clear();
   if (!dir()) { state.items = []; render(); return; }
+  if (!$('toolkit-name').value) $('toolkit-name').value = (dir().split(/[\\/]/).filter(Boolean).at(-1) || 'my_dataset').replace(/[^a-zA-Z0-9_-]+/g, '_').slice(0, 100);
   const result = await api.scan(dir());
   if (version !== state.scanVersion) return;
   state.items = result.items;
@@ -143,6 +150,29 @@ for (const kind of ['input','output']) bind(`pick-${kind}`, async () => {
   state.settings = settings; state.selected.clear(); state.page = 0; paintSettings(); await refresh(); status('Folder loaded.');
 });
 bind('clear-output', async () => { state.settings = await api.clearOutput(); paintSettings(); await refresh(); });
+function paintToolkitSettings(settings) {
+  state.settings = settings;
+  $('toolkit-path').value = settings.toolkitDir || '';
+  $('toolkit-saved-path').textContent = settings.toolkitDir ? `Saved folder: ${settings.toolkitDir}` : 'No AI Toolkit folder saved.';
+  controls();
+}
+bind('pick-toolkit', async () => {
+  status('Opening AI Toolkit folder chooser…');
+  const settings = await api.pickToolkit();
+  if (!settings) { status('Folder selection cancelled.'); return; }
+  paintToolkitSettings(settings); status('AI Toolkit folder saved.');
+});
+bind('save-toolkit', async () => { paintToolkitSettings(await api.saveToolkit($('toolkit-path').value.trim())); status('AI Toolkit folder saved.'); });
+bind('clear-toolkit', async () => { paintToolkitSettings(await api.saveToolkit('')); status('AI Toolkit folder cleared.'); });
+$('toolkit-name').oninput = controls;
+bind('export-toolkit', async () => {
+  $('toolkit-export-result').textContent = '';
+  status(`Exporting ${targets().length} images and their saved captions to AI Toolkit…`);
+  const result = await api.exportToolkit({ dir: dir(), name: $('toolkit-name').value.trim(), selectedPaths: targets().map(item => item.imagePath) });
+  const details = `${result.images} images and ${result.captions} captions exported.${result.converted ? ` ${result.converted} WebP images converted to PNG.` : ''}${result.missingCaptions ? ` ${result.missingCaptions} images have no saved caption.` : ''}`;
+  $('toolkit-export-result').textContent = `${details}\n${result.destination}\nRefresh AI Toolkit’s Datasets page to use this dataset.`;
+  status(details);
+});
 $('working-folder').onchange = () => task(async () => { state.working = $('working-folder').value; state.selected.clear(); state.page = 0; await refresh(); });
 bind('refresh', refresh);
 bind('undo', async () => { const result = await api.undo(); await refresh(); status(result.message); });
