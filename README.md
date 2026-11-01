@@ -42,6 +42,19 @@ Standalone Linux builds use the direct native folder chooser to avoid desktop-po
 
 Destination collisions fail before writes. Multiple image formats sharing a stem, such as `photo.jpg` and `photo.png`, are marked ambiguous because they share `photo.txt`; resolve those names before paired operations. Same-format conversion is skipped in place and copies the original bytes when using an output folder, including uppercase extensions and JPG/JPEG aliases. Conversion between formats normalizes EXIF orientation. JPEG conversion flattens transparency against the image library's default background; use PNG/WebP when transparency matters.
 
+## Export to AI Toolkit
+
+1. Open **AI Toolkit export settings**. Browse to your main [Ostris AI Toolkit](https://github.com/ostris/ai-toolkit) installation (the folder containing `run.py` and `toolkit`), or enter its full path and click **Save folder path**. The path is remembered across restarts.
+2. Choose the **Working folder** and **Apply to** scope. Export includes the currently visible images, or only the selected visible images when Selected images only is enabled.
+3. Enter a new **Dataset name** using letters, numbers, underscores, or hyphens, then click **Export to AI Toolkit**.
+4. Refresh AI Toolkit’s **Datasets** page and select the exported dataset when configuring your LoRA training job.
+
+The destination is `<AI Toolkit folder>/datasets/<dataset-name>`, matching [AI Toolkit’s default dataset layout](https://github.com/ostris/ai-toolkit/blob/main/ui/src/paths.ts). If AI Toolkit’s **Datasets Folder** setting points elsewhere, set it to this installation’s `datasets` directory to see the export. The installation must be accessible as a local or mounted filesystem path; this button does not upload to a remote server or start training.
+
+Export copies images and their saved `.txt` captions, leaving the source dataset untouched. PNG/JPEG image bytes are preserved; filename extensions are normalized to lowercase and captions use the image’s exact stem. WebP copies are converted to PNG because [AI Toolkit’s dataset guidance](https://github.com/ostris/ai-toolkit#dataset-preparation) notes WebP compatibility issues. Unrelated files and unsaved caption suggestions are excluded. Images without saved captions are included and reported in the result so you can finish captioning them before training if needed.
+
+Existing datasets are never merged or overwritten: use a new name for each export. Ambiguous caption stems and hidden image filenames must be resolved first. Exports use the same staging, recovery, and Undo system as other file operations. Undo removes the exported files; an empty dataset directory may remain. Dataset-directory symbolic links are rejected; use a regular directory or filesystem mount.
+
 ## Vision API captioning
 
 Expand **Vision API settings** and enter:

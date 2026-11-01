@@ -31,8 +31,22 @@
         <button id="delete" class="danger">Delete selected</button>
         <p class="hint">Changes are backed up for Undo, including across restarts. Existing destination files are never replaced.</p>
       </section>
+      <section><h2>AI Toolkit export</h2>
+        <label>Dataset name<input id="toolkit-name" placeholder="my_dataset" maxlength="100" aria-describedby="toolkit-name-hint"></label>
+        <p id="toolkit-name-hint" class="hint">Letters, numbers, underscores, or hyphens.</p>
+        <p id="toolkit-export-target" class="path"></p>
+        <button id="export-toolkit" class="primary">Export to AI Toolkit</button>
+        <p class="hint">Uses the working folder and Apply to selection. Copies images and saved captions into a new dataset. WebP copies become PNGs.</p>
+        <p id="toolkit-export-result" class="path" role="status"></p>
+      </section>
     </aside>
     <main>
+      <details id="toolkit-panel"><summary>AI Toolkit export settings</summary>
+        <label>Main AI Toolkit folder<input id="toolkit-path" placeholder="Choose the folder containing run.py"></label>
+        <div class="row"><button id="pick-toolkit">Browse…</button><button id="save-toolkit">Save folder path</button><button id="clear-toolkit" class="quiet">Clear</button></div>
+        <p class="hint">Exports go to datasets/&lt;dataset-name&gt; inside this folder. Use a local or mounted installation. AI Toolkit’s Datasets Folder setting must use this installation’s datasets folder to show these exports.</p>
+        <p id="toolkit-saved-path" class="path"></p>
+      </details>
       <details id="api-panel"><summary>Vision API settings</summary>
         <div class="settings-grid">
           <label>API base URL<input id="api-url" type="url" placeholder="https://api.openai.com/v1"></label>

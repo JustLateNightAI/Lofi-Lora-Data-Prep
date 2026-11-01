@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Add a saved AI Toolkit installation path and an **Export to AI Toolkit** button.
+- Copy the current working folder/selection into a new named dataset under the installation’s `datasets` folder, with matching saved captions.
+- Convert WebP export copies to PNG, preserve PNG/JPEG bytes and source files, and report missing captions.
+- Prevent existing datasets from being overwritten and use persistent Undo/recovery for exported files.
+
 ## 0.2.0
 
 ### Captioning

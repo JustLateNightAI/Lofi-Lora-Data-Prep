@@ -11,6 +11,7 @@ const { pickTargets, portableName, IMAGE_EXTENSIONS } = require('./actions/paths
 const { Settings } = require('./lib/settings');
 const { CaptionJobs } = require('./lib/jobs');
 const { caption, listModels, normalizeBaseURL } = require('./lib/vision');
+const { validateToolkitDirectory, exportDataset } = require('./lib/ai-toolkit');
 
 // Prefer the direct native chooser for standalone Linux builds. The desktop
 // portal adds an external process/DBus hop and can stall on some GNOME setups.
@@ -25,6 +26,7 @@ const primaryInstance = app.requestSingleInstanceLock();
 if (!primaryInstance) app.quit();
 let win, settings, history, jobs, quitting = false, mutation = false;
 let startupError = '';
+let exportWork = Promise.resolve();
 const shellURL = pathToFileURL(path.join(__dirname, 'renderer', 'index.html')).href;
 
 async function approvedDirectory(dir) {
@@ -99,6 +101,32 @@ function registerHandlers() {
     } finally { mutation = false; }
   });
   handle('folder:clear-output', async () => { idle(); settings.value.outputDir = null; await settings.persist(); return settings.public(); });
+  async function saveToolkitDirectory(directory) {
+    const toolkitDir = directory === '' ? null : await validateToolkitDirectory(directory);
+    settings.value.toolkitDir = toolkitDir;
+    await settings.persist(); return settings.public();
+  }
+  handle('toolkit:settings', async directory => {
+    idle(); mutation = true;
+    try { return await saveToolkitDirectory(directory); } finally { mutation = false; }
+  });
+  handle('toolkit:pick', async () => {
+    idle(); mutation = true;
+    try {
+      const result = await dialog.showOpenDialog(win, { title: 'Choose AI Toolkit folder', buttonLabel: 'Use this folder', defaultPath: settings.value.toolkitDir || app.getPath('home'), properties: ['openDirectory'] });
+      if (result.canceled) return null;
+      return await saveToolkitDirectory(result.filePaths[0]);
+    } finally { mutation = false; }
+  });
+  handle('toolkit:export', payload => {
+    idle(); mutation = true;
+    exportWork = (async () => {
+      const sourceDir = await approvedDirectory(payload.dir);
+      if (!settings.value.toolkitDir) throw new Error('Choose your AI Toolkit folder in export settings first.');
+      return exportDataset({ toolkitDir: settings.value.toolkitDir, sourceDir, name: payload.name, selectedPaths: payload.selectedPaths }, history);
+    })().finally(() => { mutation = false; });
+    return exportWork;
+  });
   handle('folder:scan', async dir => {
     await approvedDirectory(dir);
     const result = await scan(dir);
@@ -201,5 +229,5 @@ app.on('window-all-closed', () => app.quit());
 app.on('before-quit', event => {
   if (quitting || !jobs) return;
   event.preventDefault(); quitting = true; jobs.cancel();
-  Promise.allSettled([jobs.work, history.tail, settings.tail]).then(() => app.quit());
+  Promise.allSettled([jobs.work, exportWork, history.tail, settings.tail]).then(() => app.quit());
 });
