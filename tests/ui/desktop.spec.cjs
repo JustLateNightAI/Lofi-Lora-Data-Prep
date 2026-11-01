@@ -13,7 +13,7 @@ test.beforeEach(async () => {
   const env = { ...process.env, LDP_DATA_DIR: path.join(root, 'app-data') }; delete env.ELECTRON_RUN_AS_NODE;
   const packaged = !!process.env.LDP_TEST_PACKAGED;
   const executablePath = packaged ? process.env.LDP_TEST_EXECUTABLE || path.resolve(__dirname, '../../dist', process.platform === 'win32' ? 'win-unpacked/Lofi Data Prep.exe' : 'linux-unpacked/lofi-data-prep') : undefined;
-  application = await electron.launch({ executablePath, args: [...(packaged ? [] : [path.join(__dirname, '../../main.js')]), ...(process.platform === 'linux' ? ['--no-sandbox'] : [])], env });
+  application = await electron.launch({ executablePath, args: [...(packaged ? [] : [path.join(__dirname, '../../main.js')]), ...(process.platform === 'linux' ? ['--no-sandbox', '--ozone-platform=headless'] : [])], env });
   expect(await application.evaluate(({ app }) => app.isPackaged)).toBe(packaged);
   page = await application.firstWindow(); errors = []; page.on('pageerror', e => errors.push(e.message));
   await expect(page.locator('#status')).toContainText('Ready.');
