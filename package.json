@@ -42,6 +42,10 @@
       "buildResources": "build",
       "output": "dist"
     },
+    "asarUnpack": [
+      "**/node_modules/sharp/**/*",
+      "**/node_modules/@img/**/*"
+    ],
     "linux": {
       "target": [
         "AppImage",

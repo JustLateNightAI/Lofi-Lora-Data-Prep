@@ -80,7 +80,7 @@ npm run dist:win
 
 Build each installer on its native platform. Linux produces AppImage and deb packages; Windows produces an NSIS installer. Packages include the desktop runtime and image processing dependencies, with no Python executable or external model files. Installers are unsigned unless signing credentials are configured separately. Builds never publish releases automatically.
 
-CI runs lint, filesystem/API regression tests, real Electron UI tests against a local mock vision API, and native packaging on Windows and Ubuntu. Linux CI uses Xvfb and disables the Chromium sandbox only for its isolated test process. No real API key or billable model requests are needed for tests.
+CI runs lint, filesystem/API regression tests, real Electron UI tests against a local mock vision API, and native packaging on Windows and Ubuntu. It repeats the UI tests against the built applications to verify bundled native dependencies. Set `LDP_TEST_PACKAGED=1` when running `npm run test:ui` to test a local build. Linux CI uses Xvfb and disables the Chromium sandbox only for its isolated test process. No real API key or billable model requests are needed for tests.
 
 ## License and community
 

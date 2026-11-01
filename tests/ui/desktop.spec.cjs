@@ -6,12 +6,15 @@ const http = require('node:http');
 const sharp = require('sharp');
 let root, input, output, application, page, errors;
 test.beforeEach(async () => {
-  root = await fs.mkdtemp(path.join(os.tmpdir(), 'lofi-ui-'));
+  root = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), 'lofi-ui-')));
   input = path.join(root, 'input'); output = path.join(root, 'output');
   await fs.mkdir(input); await fs.mkdir(output);
   for (const [folder, name, color] of [[input, 'A #1.PNG', 'red'], [input, 'B.png', 'blue'], [output, 'output.png', 'green']]) await sharp({ create: { width: 20, height: 10, channels: 3, background: color } }).png().toFile(path.join(folder, name));
   const env = { ...process.env, LDP_DATA_DIR: path.join(root, 'app-data') }; delete env.ELECTRON_RUN_AS_NODE;
-  application = await electron.launch({ args: [path.join(__dirname, '../../main.js'), ...(process.platform === 'linux' ? ['--no-sandbox'] : [])], env });
+  const packaged = !!process.env.LDP_TEST_PACKAGED;
+  const executablePath = packaged ? path.resolve(__dirname, '../../dist', process.platform === 'win32' ? 'win-unpacked/Lofi Data Prep.exe' : 'linux-unpacked/lofi-data-prep') : undefined;
+  application = await electron.launch({ executablePath, args: [...(packaged ? [] : [path.join(__dirname, '../../main.js')]), ...(process.platform === 'linux' ? ['--no-sandbox'] : [])], env });
+  expect(await application.evaluate(({ app }) => app.isPackaged)).toBe(packaged);
   page = await application.firstWindow(); errors = []; page.on('pageerror', e => errors.push(e.message));
   await expect(page.locator('#status')).toContainText('Ready.');
 });
@@ -19,7 +22,7 @@ test.afterEach(async () => { if (application) await application.close(); await f
 async function pick(kind, folder) {
   await application.evaluate(({ dialog }, dir) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [dir] }); }, folder);
   await page.locator(`#pick-${kind}`).click();
-  await expect(page.locator(`#${kind}-path`)).toHaveText(folder);
+  await expect(page.locator(`#${kind}-path`)).toHaveText(await fs.realpath(folder));
 }
 test('desktop opens images, saves a new caption, and restores it with undo', async () => {
   await pick('input', input); await expect(page.locator('.tile')).toHaveCount(2);
