@@ -85,6 +85,7 @@ function paintSettings() {
   $('model-status').textContent = modelList.items.length ? `${modelList.items.length} models available. Choose one that supports image inputs; some providers also list text-only models.` : 'Refresh models to load the available choices.';
   $('api-url').value = a.baseURL; paintModels(a.model); $('api-tokens').value = a.maxTokens;
   $('api-token-field').value = a.tokenField; $('api-temperature').value = a.temperature ?? '';
+  $('api-reasoning').value = a.reasoningEffort || '';
   $('api-image-side').value = a.imageSide; $('api-prompt').value = a.prompt; $('api-key').value = '';
   $('remember-key').disabled = !s.canRememberKey; $('remember-key').checked = s.remembered;
   $('key-status').textContent = `${s.hasKey ? (s.remembered ? 'Key saved in OS-protected storage.' : 'Key kept for this session only.') : 'No API key set. Local servers may not need one.'}${s.canRememberKey ? '' : ' Secure key storage is unavailable; keys stay in memory.'}`;
@@ -159,7 +160,7 @@ $('select-none').onclick = () => { state.selected.clear(); render(); };
 let searchTimer;
 $('search').oninput = () => { state.page = 0; render(); clearTimeout(searchTimer); searchTimer = setTimeout(() => loadSearchCaptions().catch(e => status(e.message, true)), 250); };
 $('previous-page').onclick = () => { state.page--; render(); }; $('next-page').onclick = () => { state.page++; render(); };
-function apiForm() { return { baseURL: $('api-url').value, model: $('api-model').value, apiKey: $('api-key').value, rememberKey: $('remember-key').checked, maxTokens: Number($('api-tokens').value), tokenField: $('api-token-field').value, temperature: $('api-temperature').value, imageSide: Number($('api-image-side').value), prompt: $('api-prompt').value }; }
+function apiForm() { return { baseURL: $('api-url').value, model: $('api-model').value, apiKey: $('api-key').value, rememberKey: $('remember-key').checked, maxTokens: Number($('api-tokens').value), tokenField: $('api-token-field').value, reasoningEffort: $('api-reasoning').value, temperature: $('api-temperature').value, imageSide: Number($('api-image-side').value), prompt: $('api-prompt').value }; }
 bind('save-api', async () => { state.settings = await api.saveApi(apiForm()); paintSettings(); status('API settings saved.'); });
 bind('forget-key', async () => { state.settings = await api.saveApi({ ...state.settings.api, forgetKey: true }); paintSettings(); modelConnectionChanged(false); status('API key removed.'); });
 $('refresh-models').onclick = refreshModels;
@@ -176,6 +177,8 @@ bind('save-template', async () => { await api.saveTemplate({ label: $('template-
 function paintJob(job) {
   const wasRunning = state.job?.running; state.job = job;
   $('job-results').replaceChildren();
+  $('job-pause-reason').hidden = !job?.pauseReason;
+  $('job-pause-reason').textContent = job?.pauseReason ? `Paused: ${job.pauseReason} Completed captions were kept; remaining images are queued.` : '';
   if (job) {
     const done = job.items.filter(i => !['pending','running'].includes(i.status)).length;
     const failed = job.items.filter(i => i.status === 'failed').length;

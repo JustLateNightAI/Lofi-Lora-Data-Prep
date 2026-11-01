@@ -41,11 +41,13 @@
           </div>
           <label>API key<input id="api-key" type="password" autocomplete="off" placeholder="Leave blank to keep current key"></label>
           <div><label class="inline"><input id="remember-key" type="checkbox"> Remember key securely</label><p id="key-status" class="hint"></p><button id="forget-key" class="quiet">Forget key</button></div>
-          <label>Output token limit<input id="api-tokens" type="number" min="32" max="8192" value="512"></label>
+          <label>Token budget (thinking + caption)<input id="api-tokens" type="number" min="32" max="65536" value="2048"></label>
+          <label>Thinking / reasoning<select id="api-reasoning"><option value="">Server default</option><option value="none">Off (if supported)</option><option value="minimal">Minimal</option><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option><option value="xhigh">Extra high</option><option value="max">Maximum</option></select></label>
           <label>Token parameter<select id="api-token-field"><option value="max_completion_tokens">max_completion_tokens</option><option value="max_tokens">max_tokens (compatible servers)</option></select></label>
           <label>Temperature (optional)<input id="api-temperature" type="number" min="0" max="2" step="0.1" placeholder="Provider default"></label>
           <label>Maximum image side<select id="api-image-side"><option>768</option><option>1024</option><option selected>1536</option><option>2048</option></select></label>
         </div>
+        <p class="hint">Thinking can consume the token budget before the caption is written. Try Off for fast captioning, or allow a larger budget. Available reasoning levels depend on your model and server; use Server default if unsupported.</p>
         <label>Prompt preset<select id="prompt-preset"><option value="descriptive">Descriptive caption</option><option value="tags">Comma-separated tags</option><option value="custom">Custom</option></select></label>
         <label>Caption prompt<textarea id="api-prompt" rows="4"></textarea></label>
         <div class="row"><input id="template-name" placeholder="New preset name" aria-label="New preset name"><button id="save-template">Save preset</button><button id="save-api" class="primary">Save API settings</button></div>
@@ -54,8 +56,10 @@
       <section class="caption-panel"><h2>Caption with vision</h2>
         <p id="caption-target">Choose a working folder.</p>
         <div class="row"><label>Existing captions<select id="caption-mode"><option value="missing">Keep existing; caption missing only</option><option value="review">Review every result before saving</option><option value="replace">Replace captions (with Undo backups)</option></select></label>
-          <button id="generate" class="primary">Start captioning</button><button id="cancel-job" disabled>Cancel</button><button id="resume-job" disabled>Resume / retry failed</button></div>
+          <button id="generate" class="primary">Start captioning</button><button id="cancel-job" disabled>Cancel</button><button id="resume-job" disabled>Resume / retry with saved settings</button></div>
+        <p class="hint">Retries use your saved API settings and keep completed captions. Server errors and exhausted token budgets pause the batch so remaining images stay queued.</p>
         <p id="job-status" role="status">No caption job yet.</p><progress id="job-progress" max="1" value="0"></progress>
+        <p id="job-pause-reason" class="warning" role="status" hidden></p>
         <div id="job-results"></div>
       </section>
       <div class="toolbar"><label class="search">Filter filenames and captions<input id="search" type="search" placeholder="Search…"></label><span id="image-count"></span></div>

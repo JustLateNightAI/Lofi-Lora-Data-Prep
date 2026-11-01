@@ -112,6 +112,41 @@ test('API captioning targets the chosen output folder and preserves existing inp
     await page.screenshot({ path: test.info().outputPath('desktop.png'), fullPage: true });
   } finally { await new Promise(resolve => server.close(resolve)); }
 });
+test('a truncated caption pauses the batch and retries use new settings without replacing completed captions', async () => {
+  const requests = [];
+  await fs.copyFile(path.join(input, 'B.png'), path.join(input, 'C.png'));
+  const server = http.createServer(async (req, res) => {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    if (req.method === 'GET') { res.end(JSON.stringify({ data: [{ id: 'thinking-vision' }] })); return; }
+    let body = ''; for await (const chunk of req) body += chunk;
+    requests.push(JSON.parse(body));
+    const truncated = requests.length === 2;
+    res.end(JSON.stringify({ choices: [{ message: { content: truncated ? null : requests.length === 1 ? 'Keep this successful caption.' : 'Retried caption.' }, finish_reason: truncated ? 'length' : 'stop' }], usage: { completion_tokens_details: { reasoning_tokens: truncated ? 512 : 0 } } }));
+  });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  try {
+    await pick('input', input);
+    await page.locator('#api-panel summary').click();
+    await page.locator('#api-url').fill(`http://127.0.0.1:${server.address().port}/v1`);
+    await expect(page.locator('#api-model')).toHaveValue('thinking-vision');
+    await page.locator('#api-tokens').fill('512'); await page.locator('#save-api').click();
+    await expect(page.locator('#status')).toHaveText('API settings saved.');
+    await page.locator('#generate').click();
+    await expect(page.locator('#job-status')).toContainText('paused: 2/3 processed');
+    await expect(page.locator('#job-pause-reason')).toContainText('512 reasoning tokens');
+    expect(requests).toHaveLength(2);
+    await page.locator('#api-reasoning').selectOption('none'); await page.locator('#api-tokens').fill('2048'); await page.locator('#save-api').click();
+    await expect(page.locator('#status')).toHaveText('API settings saved.');
+    await page.locator('#resume-job').click();
+    await expect(page.locator('#job-status')).toContainText('complete: 3/3 processed');
+    await expect(page.locator('#job-pause-reason')).not.toBeVisible();
+    expect(requests).toHaveLength(4);
+    for (const request of requests.slice(2)) { expect(request.reasoning_effort).toBe('none'); expect(request.max_completion_tokens).toBe(2048); }
+    expect(await fs.readFile(path.join(input, 'A #1.txt'), 'utf8')).toBe('Keep this successful caption.');
+    for (const name of ['B.txt', 'C.txt']) expect(await fs.readFile(path.join(input, name), 'utf8')).toBe('Retried caption.');
+    expect(errors).toEqual([]);
+  } finally { await new Promise(resolve => server.close(resolve)); }
+});
 test('model dropdown loads with a new key, refreshes with the saved key, and reports errors', async () => {
   let fail = false; const authorizations = [];
   const server = http.createServer((req, res) => {

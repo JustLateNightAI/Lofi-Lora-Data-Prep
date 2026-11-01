@@ -23,7 +23,7 @@ test('vision request sends image bytes and honors configured model/token options
   const body = JSON.parse(request.body);
   assert.equal(request.url, 'http://localhost:1234/v1/chat/completions'); assert.equal(body.model, 'vision-model');
   assert.match(body.messages[0].content[1].image_url.url, /^data:image\/jpeg;base64,/);
-  assert.equal(body.max_tokens, 512); assert.equal(body.temperature, undefined); assert.equal(request.redirect, 'error');
+  assert.equal(body.max_tokens, 2048); assert.equal(body.temperature, undefined); assert.equal(body.reasoning_effort, undefined); assert.equal(request.redirect, 'error');
   assert.equal(result, 'A red rectangle.');
 });
 test('API errors do not persist echoed secrets and truncated text is not accepted', async t => {
@@ -34,7 +34,31 @@ test('API errors do not persist echoed secrets and truncated text is not accepte
 test('unsafe endpoints and invalid options are rejected', () => {
   for (const baseURL of ['http://example.com/v1', 'file:///etc/passwd', 'https://key@host/v1', 'https://host/v1?key=secret']) assert.throws(() => normalizeConfig({ baseURL }));
   assert.throws(() => normalizeConfig({ temperature: 'NaN' }));
+  assert.throws(() => normalizeConfig({ reasoningEffort: 'invalid' }));
+  assert.throws(() => normalizeConfig({ maxTokens: 65537 }));
+  assert.equal(normalizeConfig({ maxTokens: 32768 }).maxTokens, 32768);
   assert.equal(normalizeConfig({ temperature: 0 }).temperature, 0);
+});
+test('thinking controls are sent explicitly and reasoning never becomes a caption', async t => {
+  const { item } = await fixture(t);
+  for (const reasoningEffort of ['none', 'low']) {
+    const config = normalizeConfig({ model: 'vision', reasoningEffort });
+    assert.equal(await caption(item.imagePath, config, '', null, async (_url, options) => {
+      assert.equal(JSON.parse(options.body).reasoning_effort, reasoningEffort);
+      return Response.json({ choices: [{ message: { reasoning_content: 'internal notes', content: '<think>more internal notes</think>A red rectangle.' }, finish_reason: 'stop' }] });
+    }), 'A red rectangle.');
+    for (const content of [null, '<think>unfinished reasoning', 'unseparated reasoning</think>A red rectangle.']) {
+      await assert.rejects(caption(item.imagePath, config, '', null, async () => Response.json({ choices: [{ message: { reasoning_content: 'internal notes', content }, finish_reason: 'stop' }] })), e => e.pauseJob && e.code === 'NO_CAPTION');
+    }
+  }
+});
+test('connection errors and token exhaustion pause safely without exposing provider text', async t => {
+  const { item } = await fixture(t), config = normalizeConfig({ model: 'vision', maxTokens: 512 });
+  await assert.rejects(caption(item.imagePath, config, 'secret', null, async () => { throw new Error('secret'); }), e => e.pauseJob && e.code === 'API_UNAVAILABLE' && !e.message.includes('secret'));
+  for (const status of [400, 401, 429, 500, 503]) {
+    await assert.rejects(caption(item.imagePath, config, 'secret', null, async () => Response.json({ error: 'secret' }, { status })), e => e.pauseJob && e.code === 'API_HTTP' && !e.message.includes('secret'));
+  }
+  await assert.rejects(caption(item.imagePath, config, '', null, async () => Response.json({ choices: [{ finish_reason: 'length', message: { content: null, reasoning_content: 'internal notes' } }], usage: { completion_tokens_details: { reasoning_tokens: 512 } } })), e => e.pauseJob && e.code === 'TOKEN_LIMIT' && e.message.includes('512 reasoning tokens') && !e.message.includes('internal notes'));
 });
 test('local endpoints accept bare LAN addresses and preserve custom API roots', () => {
   assert.equal(normalizeBaseURL('192.168.1.2:8000'), 'http://192.168.1.2:8000/v1');
@@ -87,6 +111,28 @@ test('cancel aborts the active request and resumes unfinished images', async t =
   const jobs = new CaptionJobs(path.join(root, 'jobs'), { generate: async (_file, _config, _key, signal) => { started(); await new Promise((resolve, reject) => signal.addEventListener('abort', () => reject(new Error('aborted')), { once: true })); }, saveCaption: async () => { saved++; }, validateImage: async () => {}, getKey: () => '' });
   await jobs.start([item], normalizeConfig({ model: 'vision' }), 'missing'); await ready; jobs.cancel(); await jobs.work;
   assert.equal(saved, 0); assert.equal(jobs.current.status, 'paused'); jobs.generate = async () => 'caption'; await jobs.resume(); await jobs.work; assert.equal(saved, 1);
+});
+test('API failures pause the queue; resumed jobs use saved settings and keep completed captions', async t => {
+  const { root, item } = await fixture(t);
+  const { item: second } = await fixture(t), { item: third } = await fixture(t);
+  const saved = [], requested = [];
+  const options = { generate: async file => {
+    requested.push(file);
+    if (file === second.imagePath) throw Object.assign(new Error('Server unavailable'), { pauseJob: true });
+    return 'first caption';
+  }, saveCaption: async (image, text) => { saved.push([image.imagePath, text]); }, validateImage: async () => {}, getKey: () => '' };
+  const jobs = new CaptionJobs(path.join(root, 'jobs'), options);
+  await jobs.start([item, second, third], normalizeConfig({ model: 'vision', maxTokens: 512 }), 'missing'); await jobs.work;
+  assert.equal(jobs.current.status, 'paused'); assert.equal(jobs.current.pauseReason, 'Server unavailable');
+  assert.deepEqual(jobs.current.items.map(i => i.status), ['completed', 'failed', 'pending']);
+  assert.deepEqual(requested, [item.imagePath, second.imagePath]);
+  const restored = new CaptionJobs(path.join(root, 'jobs'), { ...options, generate: async (file, config) => {
+    requested.push(file); assert.equal(config.maxTokens, 2048); assert.equal(config.reasoningEffort, 'none'); return 'retried caption';
+  } });
+  await restored.load(); await restored.resume(normalizeConfig({ model: 'vision', maxTokens: 2048, reasoningEffort: 'none' })); await restored.work;
+  assert.equal(restored.current.status, 'complete'); assert.equal(restored.current.pauseReason, undefined);
+  assert.deepEqual(requested, [item.imagePath, second.imagePath, second.imagePath, third.imagePath]);
+  assert.deepEqual(saved, [[item.imagePath, 'first caption'], [second.imagePath, 'retried caption'], [third.imagePath, 'retried caption']]);
 });
 test('no insecure fallback stores keys in plaintext, and endpoint changes clear keys', async t => {
   const { root } = await fixture(t);

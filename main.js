@@ -139,7 +139,7 @@ function registerHandlers() {
     } finally { mutation = false; }
   });
   handle('job:cancel', () => jobs.cancel());
-  handle('job:resume', async () => { idle(); mutation = true; try { return await jobs.resume(); } finally { mutation = false; } });
+  handle('job:resume', async () => { idle(); mutation = true; try { return await jobs.resume(settings.value.api); } finally { mutation = false; } });
   handle('job:review', async ({ imagePath, text }) => { idle(); mutation = true; try { return await jobs.review(imagePath, text); } finally { mutation = false; } });
   const templateDir = path.join(app.getPath('home'), 'LofiTagger', 'taggingStyle');
   handle('templates:list', async () => {
