@@ -36,7 +36,9 @@
       <details id="api-panel"><summary>Vision API settings</summary>
         <div class="settings-grid">
           <label>API base URL<input id="api-url" type="url" placeholder="https://api.openai.com/v1"></label>
-          <label>Vision model<input id="api-model" placeholder="Your provider’s vision model ID"></label>
+          <div><label>Vision model<select id="api-model" aria-describedby="model-status"><option value="">Load models to choose…</option></select></label>
+            <button id="refresh-models" class="quiet">Refresh models</button><p id="model-status" class="hint" role="status">Enter an API address and key, if required.</p>
+          </div>
           <label>API key<input id="api-key" type="password" autocomplete="off" placeholder="Leave blank to keep current key"></label>
           <div><label class="inline"><input id="remember-key" type="checkbox"> Remember key securely</label><p id="key-status" class="hint"></p><button id="forget-key" class="quiet">Forget key</button></div>
           <label>Output token limit<input id="api-tokens" type="number" min="32" max="8192" value="512"></label>
@@ -47,7 +49,7 @@
         <label>Prompt preset<select id="prompt-preset"><option value="descriptive">Descriptive caption</option><option value="tags">Comma-separated tags</option><option value="custom">Custom</option></select></label>
         <label>Caption prompt<textarea id="api-prompt" rows="4"></textarea></label>
         <div class="row"><input id="template-name" placeholder="New preset name" aria-label="New preset name"><button id="save-template">Save preset</button><button id="save-api" class="primary">Save API settings</button></div>
-        <p class="hint">Uses Chat Completions with image inputs. Local servers can use http://localhost:PORT/v1. Images are sent only when you start or resume a job. A provider may charge per request.</p>
+        <p class="hint">Uses Chat Completions with image inputs. Local servers can use localhost or a private LAN address, such as http://192.168.1.2:8000/v1. Images are sent only when you start or resume a job. A provider may charge per request.</p>
       </details>
       <section class="caption-panel"><h2>Caption with vision</h2>
         <p id="caption-target">Choose a working folder.</p>

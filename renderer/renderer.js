@@ -7,6 +7,46 @@ const presets = {
   tags: 'Describe the visible image using a comma-separated list of concise tags. Include subject, appearance, clothing, pose, background, lighting, and style. Do not invent artist names, identities, or hidden details. Return only tags.'
 };
 let customPresets = [];
+const modelList = { request: 0, baseURL: '', items: [] };
+let modelTimer;
+function paintModels(selected = '') {
+  const select = $('api-model'); select.replaceChildren();
+  const placeholder = document.createElement('option'); placeholder.value = ''; placeholder.textContent = 'Choose a model…'; select.append(placeholder);
+  const ids = [...modelList.items]; if (selected && !ids.includes(selected)) ids.unshift(selected);
+  for (const id of ids) {
+    const option = document.createElement('option'); option.value = id;
+    option.textContent = modelList.items.includes(id) ? id : `${id} (saved; not listed)`; select.append(option);
+  }
+  select.value = selected;
+}
+async function refreshModels() {
+  clearTimeout(modelTimer);
+  const request = ++modelList.request;
+  const baseURL = $('api-url').value.trim(), selected = $('api-model').value;
+  if (!baseURL) { $('model-status').textContent = 'Enter an API address first.'; return; }
+  $('refresh-models').disabled = true; $('api-model').disabled = true;
+  $('model-status').textContent = 'Loading available models…';
+  try {
+    const result = await api.models({ baseURL, apiKey: $('api-key').value });
+    if (request !== modelList.request) return;
+    modelList.baseURL = result.baseURL; modelList.items = result.models;
+    const saved = state.settings?.api.baseURL === result.baseURL ? state.settings.api.model : '';
+    const preferred = selected || saved;
+    paintModels(preferred && (result.models.includes(preferred) || preferred === saved) ? preferred : result.models.length === 1 ? result.models[0] : '');
+    $('model-status').textContent = result.models.length ? `${result.models.length} models available. Choose one that supports image inputs; some providers also list text-only models.` : 'The server returned no models. Load a model on the server, then refresh.';
+  } catch (e) {
+    if (request === modelList.request) $('model-status').textContent = e.message;
+  } finally {
+    if (request === modelList.request) { $('refresh-models').disabled = false; $('api-model').disabled = false; }
+  }
+}
+function queueModels() { clearTimeout(modelTimer); if ($('api-panel').open) modelTimer = setTimeout(refreshModels, 600); }
+function modelConnectionChanged(clearSelection) {
+  modelList.request++; modelList.items = []; modelList.baseURL = '';
+  $('refresh-models').disabled = false; $('api-model').disabled = false;
+  paintModels(clearSelection ? '' : $('api-model').value);
+  $('model-status').textContent = 'Waiting to load models…'; queueModels();
+}
 function status(text, error = false) { $('status').textContent = text; $('status').classList.toggle('error', error); }
 function dir() { return state.settings?.[`${state.working}Dir`] || null; }
 function visibleItems() {
@@ -40,7 +80,10 @@ function paintSettings() {
   $('working-folder').querySelector('[value="output"]').disabled = !s.outputDir;
   if (state.working === 'output' && !s.outputDir) state.working = 'input';
   $('working-folder').value = state.working;
-  $('api-url').value = a.baseURL; $('api-model').value = a.model; $('api-tokens').value = a.maxTokens;
+  clearTimeout(modelTimer); modelList.request++; $('refresh-models').disabled = false; $('api-model').disabled = false;
+  if (modelList.baseURL !== a.baseURL) { modelList.baseURL = a.baseURL; modelList.items = []; }
+  $('model-status').textContent = modelList.items.length ? `${modelList.items.length} models available. Choose one that supports image inputs; some providers also list text-only models.` : 'Refresh models to load the available choices.';
+  $('api-url').value = a.baseURL; paintModels(a.model); $('api-tokens').value = a.maxTokens;
   $('api-token-field').value = a.tokenField; $('api-temperature').value = a.temperature ?? '';
   $('api-image-side').value = a.imageSide; $('api-prompt').value = a.prompt; $('api-key').value = '';
   $('remember-key').disabled = !s.canRememberKey; $('remember-key').checked = s.remembered;
@@ -116,7 +159,11 @@ $('search').oninput = () => { state.page = 0; render(); clearTimeout(searchTimer
 $('previous-page').onclick = () => { state.page--; render(); }; $('next-page').onclick = () => { state.page++; render(); };
 function apiForm() { return { baseURL: $('api-url').value, model: $('api-model').value, apiKey: $('api-key').value, rememberKey: $('remember-key').checked, maxTokens: Number($('api-tokens').value), tokenField: $('api-token-field').value, temperature: $('api-temperature').value, imageSide: Number($('api-image-side').value), prompt: $('api-prompt').value }; }
 bind('save-api', async () => { state.settings = await api.saveApi(apiForm()); paintSettings(); status('API settings saved.'); });
-bind('forget-key', async () => { state.settings = await api.saveApi({ ...state.settings.api, forgetKey: true }); paintSettings(); status('API key removed.'); });
+bind('forget-key', async () => { state.settings = await api.saveApi({ ...state.settings.api, forgetKey: true }); paintSettings(); modelConnectionChanged(false); status('API key removed.'); });
+$('refresh-models').onclick = refreshModels;
+$('api-url').addEventListener('input', () => modelConnectionChanged(true));
+$('api-key').addEventListener('input', () => modelConnectionChanged(false));
+$('api-panel').addEventListener('toggle', () => { if ($('api-panel').open) queueModels(); else clearTimeout(modelTimer); });
 async function loadTemplates() {
   customPresets = await api.templates();
   for (const option of [...$('prompt-preset').options]) if (option.value.startsWith('saved:')) option.remove();

@@ -42,8 +42,8 @@ Destination collisions fail before writes. Multiple image formats sharing a stem
 
 Expand **Vision API settings** and enter:
 
-- **API base URL**, ending at the API root, such as `https://api.openai.com/v1`, `https://openrouter.ai/api/v1`, or `http://localhost:1234/v1` for a compatible local server.
-- **Vision model**: the exact model ID supplied by your provider. The model must accept image inputs through Chat Completions; text-only models and providers requiring a different API format are unsupported.
+- **API base URL**, ending at the API root, such as `https://api.openai.com/v1`, `https://openrouter.ai/api/v1`, or `http://localhost:1234/v1` for a compatible local server. Private LAN servers work too: entering `192.168.1.2:8000` expands to `http://192.168.1.2:8000/v1`. Custom API paths are preserved. HTTP is supported for local/private LAN hosts; public hosts require HTTPS.
+- **Vision model**: choose from the dropdown populated by the server's `/models` endpoint. The list loads when you open API settings or change the endpoint/key; **Refresh models** reloads it on demand. A sole model is selected automatically. The saved selection survives refreshes and connection errors. The model must accept image inputs through Chat Completions; a provider's list may also contain text-only models, which cannot caption images.
 - **API key**, if required. Keys are kept in the Electron main process. Remembering a key uses the operating system's encrypted storage. Linux systems without a secure keyring keep keys in memory only. Changing the endpoint clears the old key.
 - Optional temperature, maximum image side, and output token limit. Leave temperature empty for the provider default. Choose `max_tokens` for compatible servers requiring it, or `max_completion_tokens` for providers using that field.
 - Your caption prompt, or a descriptive/tag preset. Existing text presets in `~/LofiTagger/taggingStyle` remain available.

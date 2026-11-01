@@ -4,7 +4,7 @@ const fs = require('node:fs/promises');
 const os = require('node:os');
 const path = require('node:path');
 const sharp = require('sharp');
-const { normalizeConfig, caption } = require('../lib/vision');
+const { normalizeBaseURL, normalizeConfig, listModels, caption } = require('../lib/vision');
 const { CaptionJobs } = require('../lib/jobs');
 const { Settings } = require('../lib/settings');
 async function fixture(t) {
@@ -36,6 +36,36 @@ test('unsafe endpoints and invalid options are rejected', () => {
   assert.throws(() => normalizeConfig({ temperature: 'NaN' }));
   assert.equal(normalizeConfig({ temperature: 0 }).temperature, 0);
 });
+test('local endpoints accept bare LAN addresses and preserve custom API roots', () => {
+  assert.equal(normalizeBaseURL('192.168.1.2:8000'), 'http://192.168.1.2:8000/v1');
+  assert.equal(normalizeBaseURL('http://10.0.0.2:1234/'), 'http://10.0.0.2:1234/v1');
+  assert.equal(normalizeBaseURL('http://172.16.2.3:8000/custom/'), 'http://172.16.2.3:8000/custom');
+  assert.equal(normalizeBaseURL('localhost:1234'), 'http://localhost:1234/v1');
+  assert.equal(normalizeBaseURL('http://deepseek.local:8000'), 'http://deepseek.local:8000/v1');
+  assert.equal(normalizeBaseURL('http://[fd00::2]:8000/v1'), 'http://[fd00::2]:8000/v1');
+  assert.throws(() => normalizeBaseURL('http://172.32.1.2/v1'));
+  assert.throws(() => normalizeBaseURL('http://192.168.1.2:8000/v1?key=secret'));
+});
+test('model discovery requests authenticated IDs and returns sorted unique choices', async () => {
+  let request;
+  const models = await listModels('192.168.1.2:8000', 'synthetic-key', async (url, options) => {
+    request = { url, ...options };
+    return Response.json({ data: [{ id: 'z-vision' }, { id: 'a-vision' }, { id: 'z-vision' }, { id: '' }, { name: 'invalid' }, null] });
+  });
+  assert.deepEqual(models, ['a-vision', 'z-vision']);
+  assert.equal(request.url, 'http://192.168.1.2:8000/v1/models');
+  assert.equal(request.method, 'GET'); assert.equal(request.headers.Authorization, 'Bearer synthetic-key');
+  assert.equal(request.redirect, 'error'); assert.ok(request.signal);
+  assert.deepEqual(await listModels('localhost:1234', '', async (_url, options) => {
+    assert.equal(options.headers.Authorization, undefined); return Response.json({ data: [] });
+  }), []);
+});
+test('model discovery reports safe actionable errors for failed or malformed responses', async () => {
+  await assert.rejects(listModels('localhost:1234', 'secret', async () => Response.json({ error: 'secret' }, { status: 401 })), /^Error: Models HTTP 401\. Check your API key\.$/);
+  await assert.rejects(listModels('localhost:1234', '', async () => Response.json({ wrong: [] })), /unsupported model list/);
+  await assert.rejects(listModels('localhost:1234', '', async () => new Response('not json')), /invalid JSON/);
+  await assert.rejects(listModels('localhost:1234', '', async () => { throw new Error('secret'); }), /Could not reach the model list/);
+});
 test('missing-only job skips existing captions without contacting provider', async t => {
   const { root, item } = await fixture(t); await fs.writeFile(item.captionPath, 'existing'); let calls = 0;
   const jobs = new CaptionJobs(path.join(root, 'jobs'), { generate: async () => { calls++; }, saveCaption: async () => {}, validateImage: async () => {}, getKey: () => '' });
@@ -65,5 +95,9 @@ test('no insecure fallback stores keys in plaintext, and endpoint changes clear 
   await settings.saveApi({ baseURL: 'https://host.example/v1', model: 'vision', apiKey: 'fake-key', rememberKey: true });
   assert.equal(settings.public().remembered, false); assert.equal(settings.public().hasKey, true);
   assert.ok(!(await fs.readFile(settings.file, 'utf8')).includes('fake-key'));
+  assert.equal(settings.requestKey('https://host.example/v1', ''), 'fake-key');
+  assert.equal(settings.requestKey('http://192.168.1.2:8000/v1', ''), '');
+  assert.equal(settings.requestKey('http://192.168.1.2:8000/v1', 'temporary-key'), 'temporary-key');
+  assert.equal(settings.keyFor('https://host.example/v1'), 'fake-key');
   await settings.saveApi({ baseURL: 'https://other.example/v1', model: 'vision' }); assert.equal(settings.public().hasKey, false);
 });

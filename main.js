@@ -10,7 +10,7 @@ const { digest } = require('./actions/transactions');
 const { pickTargets, portableName, IMAGE_EXTENSIONS } = require('./actions/paths');
 const { Settings } = require('./lib/settings');
 const { CaptionJobs } = require('./lib/jobs');
-const { caption } = require('./lib/vision');
+const { caption, listModels, normalizeBaseURL } = require('./lib/vision');
 
 protocol.registerSchemesAsPrivileged([{ scheme: 'ldp-image', privileges: { standard: true, secure: true, supportFetchAPI: true } }]);
 if (process.env.LDP_DATA_DIR) app.setPath('userData', path.resolve(process.env.LDP_DATA_DIR));
@@ -112,6 +112,10 @@ function registerHandlers() {
   });
   handle('undo:perform', async () => { idle(); mutation = true; try { return await history.undo(); } finally { mutation = false; } });
   handle('settings:api', async input => { idle(); return settings.saveApi(input); });
+  handle('api:models', async ({ baseURL, apiKey }) => {
+    const endpoint = normalizeBaseURL(baseURL);
+    return { baseURL: endpoint, models: await listModels(endpoint, settings.requestKey(endpoint, apiKey), net.fetch) };
+  });
   handle('job:start', async payload => {
     idle(); mutation = true;
     try {

@@ -14,6 +14,7 @@ contextBridge.exposeInMainWorld('LDP', {
   action: data => invoke('action:run', data),
   undo: () => invoke('undo:perform'),
   saveApi: data => invoke('settings:api', data),
+  models: data => invoke('api:models', data),
   startJob: data => invoke('job:start', data),
   cancelJob: () => invoke('job:cancel'),
   resumeJob: () => invoke('job:resume'),
