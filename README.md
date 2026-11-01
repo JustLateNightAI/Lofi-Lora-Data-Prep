@@ -4,6 +4,8 @@ A desktop tool for preparing image/caption datasets on **Windows and Linux**. Br
 
 Python, PyTorch, CUDA, local model downloads, and the old JoyCaption sidecar are no longer used. Captioning runs through your chosen API; ordinary dataset editing works without an API key or internet connection.
 
+See the [0.2.0 changelog](CHANGELOG.md) for the modernization changes and validation status.
+
 ## Start from source
 
 Install **Node.js 24 LTS** (minimum 22.12) and Git, then:
@@ -51,7 +53,7 @@ Expand **Vision API settings** and enter:
 - **Thinking / reasoning**: leave **Server default** to send no reasoning option, or select **Off** / an effort level supported by the model. This sends `reasoning_effort`; TensorFold supports `none` to disable thinking. Other providers/models may require different controls. If a request is rejected, return to Server default. Thinking models may need much larger token budgets; truncated responses are never saved.
 - Your caption prompt, or a descriptive/tag preset. Existing text presets in `~/LofiTagger/taggingStyle` remain available.
 
-Save settings before starting. Each request sends the prompt and a JPEG preview of one image to the configured endpoint. Images are oriented correctly and resized within the chosen maximum side; originals stay untouched. No images are sent until Start or Resume is clicked. Provider usage charges and data handling policies apply.
+Save settings before starting. Each request sends the prompt and a JPEG preview of one image to the configured endpoint. Requests run **one image at a time**: the app waits for the result before sending the next image, with no additional delay between successful requests. Images are oriented correctly and resized within the chosen maximum side; originals stay untouched. No images are sent until Start or Resume is clicked. Provider usage charges and data handling policies apply.
 
 Save modes:
 
@@ -63,9 +65,15 @@ Jobs record progress locally. Cancel aborts the active request and keeps complet
 
 API format reference: [OpenAI image inputs](https://developers.openai.com/api/docs/guides/images-vision?api-mode=chat).
 
+### Local thinking models and failed requests
+
+For a compatible local server such as TensorFold, start with **Thinking / reasoning: Off** and a **2,048-token budget**, then save API settings. Models that require thinking may need a higher budget and a supported effort level. Existing settings keep their previous token limit until you change it.
+
+A truncated response means the model reached a generation limit before finishing. A connection refusal means the app could not establish a connection to the API server; check that the server is still listening on the configured port. If a server error is followed by timeouts or refusals, inspect the server logs to identify the cause. Once the server is available and settings are saved, use **Resume / retry with saved settings** to continue without regenerating completed captions.
+
 ## Recovery and storage
 
-History and jobs are stored under Electron's user-data directory (`%APPDATA%/lofi-data-prep` on Windows, `$XDG_CONFIG_HOME/lofi-data-prep` or `~/.config/lofi-data-prep` on Linux). `LDP_DATA_DIR` can select another local application-data directory.
+History, settings, and jobs are stored under Electron's user-data directory. Packaged builds use the application name `Lofi Data Prep`: `%APPDATA%/Lofi Data Prep` on Windows, or `$XDG_CONFIG_HOME/Lofi Data Prep` (normally `~/.config/Lofi Data Prep`) on Linux. Source runs can use the package name `lofi-data-prep` instead. `LDP_DATA_DIR` can select another local application-data directory.
 
 Each operation stages replacements and backs up originals before changing the dataset. On restart, unfinished operations are rolled back. If a file changed outside the app, recovery stops with the backup location instead of overwriting that edit. Preserve the history directory when investigating a recovery error. Original files remain recoverable as long as those backups remain intact.
 
