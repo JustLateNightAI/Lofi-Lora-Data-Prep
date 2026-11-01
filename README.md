@@ -27,6 +27,8 @@ npm run dev
 
 A graphical desktop and Electron's normal Linux system libraries are required. Keep the Chromium sandbox enabled for normal use. No Python virtual environment is needed. An old `sidecar/.venv` or model cache is no longer read; it can be removed manually if you no longer need it.
 
+Standalone Linux builds use the direct native folder chooser to avoid desktop-portal delays. It opens in your home folder initially and remembers the selected folder. Set `LDP_USE_PORTAL_DIALOGS=1` before launching if you prefer the desktop portal; confined Flatpak/Snap environments retain it automatically.
+
 ## Dataset workflow
 
 1. Choose an input folder containing PNG, JPEG, or WebP images and optional matching `.txt` captions.

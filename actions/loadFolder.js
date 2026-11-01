@@ -2,6 +2,7 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
 const { IMAGE_EXTENSIONS, stem, captionPath } = require('./paths');
+const filenameOrder = new Intl.Collator('en', { numeric: true });
 module.exports = async function loadFolder(dir) {
   const entries = await fs.readdir(dir, { withFileTypes: true });
   const files = entries.filter(e => e.isFile()).map(e => e.name);
@@ -13,7 +14,7 @@ module.exports = async function loadFolder(dir) {
     if (IMAGE_EXTENSIONS.has(path.extname(name).toLowerCase())) imageStems.set(key, (imageStems.get(key) || 0) + 1);
   }
   const items = files.filter(name => IMAGE_EXTENSIONS.has(path.extname(name).toLowerCase()))
-    .sort((a, b) => a.localeCompare(b, 'en', { numeric: true })).map(filename => {
+    .sort(filenameOrder.compare).map(filename => {
       const imagePath = path.join(dir, filename);
       const key = stem(filename).toLowerCase();
       const matches = captions.get(key) || [];

@@ -12,6 +12,13 @@ const { Settings } = require('./lib/settings');
 const { CaptionJobs } = require('./lib/jobs');
 const { caption, listModels, normalizeBaseURL } = require('./lib/vision');
 
+// Prefer the direct native chooser for standalone Linux builds. The desktop
+// portal adds an external process/DBus hop and can stall on some GNOME setups.
+// Confined packages and an explicit user override retain the portal path.
+if (process.platform === 'linux' && !process.env.FLATPAK_ID && !process.env.SNAP && process.env.LDP_USE_PORTAL_DIALOGS !== '1' && !app.commandLine.hasSwitch('xdg-portal-required-version')) {
+  app.commandLine.appendSwitch('xdg-portal-required-version', '999');
+}
+
 protocol.registerSchemesAsPrivileged([{ scheme: 'ldp-image', privileges: { standard: true, secure: true, supportFetchAPI: true } }]);
 if (process.env.LDP_DATA_DIR) app.setPath('userData', path.resolve(process.env.LDP_DATA_DIR));
 const primaryInstance = app.requestSingleInstanceLock();
@@ -76,13 +83,20 @@ function registerHandlers() {
   handle('folder:pick', async kind => {
     idle();
     if (!['input', 'output'].includes(kind)) throw new Error('Invalid folder type.');
-    const result = await dialog.showOpenDialog(win, { properties: ['openDirectory'] });
-    if (result.canceled) return null;
-    const dir = await fs.realpath(result.filePaths[0]);
-    if (!settings.value.roots.includes(dir)) settings.value.roots.push(dir);
-    settings.value[`${kind}Dir`] = dir;
-    if (settings.value.inputDir === settings.value.outputDir) settings.value.outputDir = null;
-    await settings.persist(); return settings.public();
+    mutation = true;
+    try {
+      const result = await dialog.showOpenDialog(win, {
+        title: `Choose ${kind} folder`, buttonLabel: 'Use this folder',
+        defaultPath: settings.value[`${kind}Dir`] || settings.value.inputDir || app.getPath('home'),
+        properties: ['openDirectory']
+      });
+      if (result.canceled) return null;
+      const dir = await fs.realpath(result.filePaths[0]);
+      if (!settings.value.roots.includes(dir)) settings.value.roots.push(dir);
+      settings.value[`${kind}Dir`] = dir;
+      if (settings.value.inputDir === settings.value.outputDir) settings.value.outputDir = null;
+      await settings.persist(); return settings.public();
+    } finally { mutation = false; }
   });
   handle('folder:clear-output', async () => { idle(); settings.value.outputDir = null; await settings.persist(); return settings.public(); });
   handle('folder:scan', async dir => {

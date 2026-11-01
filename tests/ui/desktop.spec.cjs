@@ -24,6 +24,35 @@ async function pick(kind, folder) {
   await page.locator(`#pick-${kind}`).click();
   await expect(page.locator(`#${kind}-path`)).toHaveText(await fs.realpath(folder));
 }
+test('folder chooser cancels safely, remembers the folder, and recovers after an error', async () => {
+  async function pendingPicker() {
+    await application.evaluate(({ dialog }) => {
+      dialog.showOpenDialog = (_window, options) => new Promise((resolve, reject) => {
+        globalThis.picker = { options, resolve, reject };
+      });
+    });
+    await page.locator('#pick-input').click();
+    await expect.poll(() => application.evaluate(() => !!globalThis.picker)).toBe(true);
+    await expect(page.locator('#status')).toHaveText('Opening folder chooser…');
+    await expect(page.locator('#pick-input')).toBeDisabled();
+  }
+  await pendingPicker();
+  expect(await application.evaluate(({ app }) => globalThis.picker.options.defaultPath === app.getPath('home'))).toBe(true);
+  expect(await page.evaluate(() => globalThis.LDP.pickFolder('output').then(() => '', error => error.message))).toContain('Wait for the current operation');
+  await application.evaluate(() => { globalThis.picker.resolve({ canceled: true, filePaths: [] }); delete globalThis.picker; });
+  await expect(page.locator('#status')).toHaveText('Folder selection cancelled.');
+  await expect(page.locator('#pick-input')).toBeEnabled();
+  expect((await page.evaluate(() => globalThis.LDP.state())).settings.inputDir).toBeNull();
+  await pick('input', input);
+  await pendingPicker();
+  expect(await application.evaluate(() => globalThis.picker.options.defaultPath)).toBe(input);
+  await application.evaluate(() => { globalThis.picker.reject(new Error('Chooser unavailable')); delete globalThis.picker; });
+  await expect(page.locator('#status')).toContainText('Chooser unavailable');
+  await expect(page.locator('#pick-input')).toBeEnabled();
+  await expect(page.locator('#input-path')).toHaveText(input);
+  await pick('output', output);
+  expect(errors).toEqual([]);
+});
 test('desktop opens images, saves a new caption, and restores it with undo', async () => {
   await pick('input', input); await expect(page.locator('.tile')).toHaveCount(2);
   await page.getByRole('button', { name: 'Edit A #1.PNG', exact: true }).click();

@@ -136,7 +136,9 @@ function render() {
 }
 function bind(id, fn) { $(id).onclick = () => task(fn); }
 for (const kind of ['input','output']) bind(`pick-${kind}`, async () => {
-  const settings = await api.pickFolder(kind); if (!settings) return;
+  status('Opening folder chooser…');
+  const settings = await api.pickFolder(kind); if (!settings) { status('Folder selection cancelled.'); return; }
+  status('Loading folder…');
   state.settings = settings; state.selected.clear(); state.page = 0; paintSettings(); await refresh(); status('Folder loaded.');
 });
 bind('clear-output', async () => { state.settings = await api.clearOutput(); paintSettings(); await refresh(); });
