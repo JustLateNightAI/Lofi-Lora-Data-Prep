@@ -14,6 +14,6 @@ Under the following terms:
 Full license text: https://creativecommons.org/licenses/by-nc/4.0/
 
 Third-Party Licenses:
-- JoyCaption (Apache License 2.0) — see LICENSES/JOYCAPTION.txt
-- Hugging Face Transformers (Apache License 2.0)
-- PyTorch (BSD-Style License)
+- Electron (MIT): https://github.com/electron/electron/blob/main/LICENSE
+- sharp (Apache License 2.0): https://github.com/lovell/sharp/blob/main/LICENSE
+- Vision APIs are independently configured services; their provider terms apply.

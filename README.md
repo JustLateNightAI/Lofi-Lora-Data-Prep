@@ -1,97 +1,89 @@
 # Lofi LoRA Data Prep
 
-A desktop tool (Electron + Python sidecar) for curating LoRA datasets: rename, shuffle, convert, and tag images with automated captioning.
+A desktop tool for preparing image/caption datasets on **Windows and Linux**. Browse images, edit captions, rename and shuffle pairs, convert formats, and caption images using a configurable **OpenAI-compatible vision API**.
 
-## Discord
-https://discord.gg/zxRACHM
-Maybe I'll help you with your errors, maybe I wont. 
-Depends on my coffee supply
+Python, PyTorch, CUDA, local model downloads, and the old JoyCaption sidecar are no longer used. Captioning runs through your chosen API; ordinary dataset editing works without an API key or internet connection.
 
-## Features
+## Start from source
 
-* GUI for dataset management (rename, shuffle, convert formats)
-* Automated image captioning via JoyCaption (LLaVA-based) (currently janky, but works)
-* Tag editing and prompt customization
-* Works with CPU or NVIDIA GPU (INT8, NF4, BF16 quantization)
-* Built-in GPU/VRAM monitor
+Install **Node.js 24 LTS** (minimum 22.12) and Git, then:
 
-## Requirements
+```sh
+git clone https://github.com/JustLateNightAI/Lofi-Lora-Data-Prep.git
+cd Lofi-Lora-Data-Prep
+```
 
-* Python 3.10+
-* Node.js + npm (from [https://nodejs.org](https://nodejs.org))
-* NVIDIA GPU (optional for acceleration — CPU mode works everywhere)
+**Windows 10/11:** run `setup.bat` once, then `start.bat`. `run.bat` remains an alias.
 
+**Linux desktop:** run `./setup.sh` once, then `./start.sh`. If downloaded as a ZIP, use `bash setup.sh` and `bash start.sh`.
 
-## Attibutions 
-This project uses JoyCaption for automatic image captioning. https://github.com/fpgaminer/joycaption
-JoyCaption is licensed under the Apache License 2.0 https://github.com/fpgaminer/joycaption/blob/main/LICENSE
+Equivalent commands on either platform:
 
-## Quickstart
+```sh
+npm ci
+npm run install:electron
+npm run dev
+```
 
-### Windows
-The tool works, but is currently having a few bugs on windows that it doesnt have on linux, i am working on patching them.
+A graphical desktop and Electron's normal Linux system libraries are required. Keep the Chromium sandbox enabled for normal use. No Python virtual environment is needed. An old `sidecar/.venv` or model cache is no longer read; it can be removed manually if you no longer need it.
 
-1. Clone or download this repo
+## Dataset workflow
 
-   ```bash
-   git clone https://github.com/JustLateNightAI/Lofi-Lora-Data-Prep.git
-   cd Lofi-Lora-Data-Prep
-   ```
-2. Run setup
+1. Choose an input folder containing PNG, JPEG, or WebP images and optional matching `.txt` captions.
+2. Optionally choose an output folder. Rename, shuffle, and conversion copy their results there when Input is the working folder. Without an output folder, operations change the working folder with original bytes kept in history.
+3. Use **Working folder** to explicitly choose Input or Output. Captioning always saves beside images in that working folder.
+4. Filter by filenames/captions, select images, and choose All visible or Selected only. An empty selection never means the entire dataset.
+5. Click an image to edit its caption. Close/navigation prompts before discarding edits. Filenames with spaces, Unicode, uppercase extensions, and URL punctuation are supported.
+6. Use **Undo last change** to restore the latest file operation or caption save, including after restarting.
 
-   * Double-click `setup.bat`
-   * Creates a Python virtualenv under `sidecar\\`
-   * Installs Python + npm dependencies
-   * Prompts you to pick CPU or CUDA PyTorch
-3. Run the app
+Destination collisions fail before writes. Multiple image formats sharing a stem, such as `photo.jpg` and `photo.png`, are marked ambiguous because they share `photo.txt`; resolve those names before paired operations. Same-format conversion is skipped. Conversion normalizes EXIF orientation. JPEG conversion flattens transparency against the image library's default background; use PNG/WebP when transparency matters.
 
-   * Double-click `start.bat`
-   * Electron launches and automatically spawns the sidecar
+## Vision API captioning
 
-### Linux
+Expand **Vision API settings** and enter:
 
-1. Clone the repo
+- **API base URL**, ending at the API root, such as `https://api.openai.com/v1`, `https://openrouter.ai/api/v1`, or `http://localhost:1234/v1` for a compatible local server.
+- **Vision model**: the exact model ID supplied by your provider. The model must accept image inputs through Chat Completions; text-only models and providers requiring a different API format are unsupported.
+- **API key**, if required. Keys are kept in the Electron main process. Remembering a key uses the operating system's encrypted storage. Linux systems without a secure keyring keep keys in memory only. Changing the endpoint clears the old key.
+- Optional temperature, maximum image side, and output token limit. Leave temperature empty for the provider default. Choose `max_tokens` for compatible servers requiring it, or `max_completion_tokens` for providers using that field.
+- Your caption prompt, or a descriptive/tag preset. Existing text presets in `~/LofiTagger/taggingStyle` remain available.
 
-   ```bash
-   git clone https://github.com/JustLateNightAI/Lofi-Lora-Data-Prep.git
-   cd Lofi-Lora-Data-Prep
-   ```
-2. Set up Python sidecar
+Save settings before starting. Each request sends the prompt and a JPEG preview of one image to the configured endpoint. Images are oriented correctly and resized within the chosen maximum side; originals stay untouched. No images are sent until Start or Resume is clicked. Provider usage charges and data handling policies apply.
 
-   ```bash
-   cd sidecar
-   python3 -m venv venv
-   source venv/bin/activate
-   pip install --upgrade pip
-   pip install -r requirements.txt
-   # Optional: install torch with CUDA (NVIDIA only)
-   # pip install --index-url https://download.pytorch.org/whl/cu124 torch torchvision torchaudio
-   cd ..
-   ```
-3. Set up Electron app
+Save modes:
 
-   ```bash
-   npm install
-   ```
-4. Run the app
+- **Keep existing** (default): skip every existing caption file, including empty files.
+- **Review every result**: inspect and edit generated suggestions before saving; discard unwanted suggestions.
+- **Replace captions**: explicit replacement with Undo backups.
 
-   ```bash
-   # Make sure your venv is active so the sidecar uses it
-   source sidecar/venv/bin/activate
-   npm run dev
-   ```
+Jobs record progress locally. Cancel aborts the active request and keeps completed work. Resume retries failed/unfinished images. Interrupted jobs reopen paused and require an explicit Resume. Generated results are saved before writing captions so recovery can reuse them. A provider may still charge for an interrupted request. Rate limits and authentication failures are reported per image; retries are manual. Truncated or empty responses are not written.
 
-## ⚙ Notes
+API format reference: [OpenAI image inputs](https://developers.openai.com/api/docs/guides/images-vision?api-mode=chat).
 
-* No NVIDIA? Choose CPU during setup (or install CPU Torch on Linux).
-* If CUDA install fails on Windows, update NVIDIA drivers or rerun setup and choose CPU.
-* Logs stay open in the console for debugging.
+## Recovery and storage
 
-## Screenshots
+History and jobs are stored under Electron's user-data directory (`%APPDATA%/lofi-data-prep` on Windows, `$XDG_CONFIG_HOME/lofi-data-prep` or `~/.config/lofi-data-prep` on Linux). `LDP_DATA_DIR` can select another local application-data directory.
 
-![Screenshot](readme_imgs/1.png)
-![Screenshot](readme_imgs/2.png)
+Each operation stages replacements and backs up originals before changing the dataset. On restart, unfinished operations are rolled back. If a file changed outside the app, recovery stops with the backup location instead of overwriting that edit. Preserve the history directory when investigating a recovery error. Original files remain recoverable as long as those backups remain intact.
 
-## License
+History is not automatically pruned and uses disk space. Keep enough free space for the originals and staged outputs. Safe publication uses hard links within the destination filesystem, supported by local NTFS and common Linux filesystems; unsupported filesystems fail with an explanation. Back up valuable datasets independently. Legacy `.ldp_trash` folders are left untouched; old in-memory undo records cannot be recovered by the new app.
 
-Creative Commons BY-NC 4.0 License
+## Development and builds
+
+```sh
+npm run check
+npm test
+npm run test:ui
+npm run dist:linux
+npm run dist:win
+```
+
+Build each installer on its native platform. Linux produces AppImage and deb packages; Windows produces an NSIS installer. Packages include the desktop runtime and image processing dependencies, with no Python executable or external model files. Installers are unsigned unless signing credentials are configured separately. Builds never publish releases automatically.
+
+CI runs lint, filesystem/API regression tests, real Electron UI tests against a local mock vision API, and native packaging on Windows and Ubuntu. Linux CI uses Xvfb and disables the Chromium sandbox only for its isolated test process. No real API key or billable model requests are needed for tests.
+
+## License and community
+
+[Creative Commons BY-NC 4.0](License). Package metadata follows the existing repository license.
+
+[Discord](https://discord.gg/zxRACHM)
